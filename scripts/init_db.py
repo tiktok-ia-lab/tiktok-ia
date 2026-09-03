@@ -3,9 +3,13 @@ from pathlib import Path
 
 DB_PATH = Path("data/tiktok.db")
 
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+DB_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 with sqlite3.connect(DB_PATH) as conn:
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS experiments (
             id TEXT PRIMARY KEY,
@@ -14,7 +18,9 @@ with sqlite3.connect(DB_PATH) as conn:
             duration_seconds INTEGER,
             concept TEXT,
             hypothesis TEXT,
-            status TEXT NOT NULL DEFAULT 'draft'
+            status TEXT NOT NULL DEFAULT 'draft',
+            tiktok_video_id TEXT,
+            tiktok_url TEXT
         )
     """)
 
@@ -31,8 +37,21 @@ with sqlite3.connect(DB_PATH) as conn:
             followers_gained INTEGER,
             avg_watch_time_seconds REAL,
             completion_rate REAL,
-            FOREIGN KEY (experiment_id) REFERENCES experiments(id)
+            FOREIGN KEY (
+                experiment_id
+            ) REFERENCES experiments(id)
         )
     """)
 
-print(f"Base de datos creada en {DB_PATH}")
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS
+        idx_metrics_experiment_time
+        ON metrics (
+            experiment_id,
+            collected_at
+        )
+    """)
+
+print(
+    f"Base de datos preparada en {DB_PATH}"
+)
