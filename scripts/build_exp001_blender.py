@@ -76,6 +76,52 @@ def make_material(name, color):
     return mat
 
 
+def make_wood_material(name, dark, light):
+    """Procedural wet rustic wood material."""
+
+    mat = bpy.data.materials.new(name=name)
+    mat.use_nodes = True
+
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+
+    bsdf = nodes.get("Principled BSDF")
+
+    noise = nodes.new("ShaderNodeTexNoise")
+    noise.inputs["Scale"].default_value = 5.0
+    noise.inputs["Detail"].default_value = 3.0
+    noise.inputs["Roughness"].default_value = 0.65
+
+    mapping = nodes.new("ShaderNodeMapping")
+    texcoord = nodes.new("ShaderNodeTexCoord")
+
+    ramp = nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].color = (*dark, 1.0)
+    ramp.color_ramp.elements[1].color = (*light, 1.0)
+
+    links.new(
+        texcoord.outputs["Generated"],
+        mapping.inputs["Vector"]
+    )
+    links.new(
+        mapping.outputs["Vector"],
+        noise.inputs["Vector"]
+    )
+    links.new(
+        noise.outputs["Fac"],
+        ramp.inputs["Fac"]
+    )
+    links.new(
+        ramp.outputs["Color"],
+        bsdf.inputs["Base Color"]
+    )
+
+    bsdf.inputs["Roughness"].default_value = 0.32
+
+    return mat
+
+
+
 def add_box(
     name,
     location,
@@ -1093,14 +1139,16 @@ except Exception:
 # MATERIALS
 # ============================================================
 
-mat_cabin = make_material(
+mat_cabin = make_wood_material(
     "MAT_CABIN",
-    (0.22, 0.11, 0.055)
+    dark=(0.055, 0.018, 0.008),
+    light=(0.28, 0.10, 0.025)
 )
 
-mat_gable = make_material(
+mat_gable = make_wood_material(
     "MAT_GABLE",
-    (0.24, 0.12, 0.06)
+    dark=(0.065, 0.022, 0.010),
+    light=(0.30, 0.11, 0.030)
 )
 
 mat_roof = make_material(
