@@ -31,3 +31,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.log
+# Secrets / credentials
+.env
+.env.*
+secrets/
+*.secret
