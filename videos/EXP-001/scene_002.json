@@ -1,0 +1,202 @@
+{
+  "scene_id": "SCENE-002",
+  "experiment_id": "EXP-001",
+
+  "inherits": {
+    "world": "world.json",
+    "geometry": "geometry.json"
+  },
+
+  "role": "interior_view_through_front_window",
+
+  "camera": {
+    "id": "CAM-002",
+
+    "position": {
+      "x": 1.8,
+      "y": -1.0,
+      "z": 1.55
+    },
+
+    "forward": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+    },
+
+    "looking_through": "WINDOW-FRONT-01",
+
+    "framing": {
+      "aspect_ratio": "9:16",
+      "lens": "moderate_wide",
+      "window_prominence": "high",
+      "interior_context": "medium"
+    }
+  },
+
+  "window": {
+    "object": "WINDOW-FRONT-01",
+
+    "pane_layout": {
+      "columns": 3,
+      "rows": 3,
+      "vertical_mullions": 2,
+      "horizontal_mullions": 2,
+      "locked": true
+    },
+
+    "forbidden_changes": [
+      "single_vertical_divider_only",
+      "panoramic_window",
+      "different_number_of_panes",
+      "different_window_position",
+      "new_window_geometry"
+    ]
+  },
+
+  "porch": {
+    "object": "PORCH-01",
+
+    "relationship_to_camera": {
+      "between_camera_and_exterior": true,
+      "directly_outside_window": true
+    },
+
+    "visible_structure_expected": [
+      "porch_floor",
+      "porch_railing_right",
+      "porch_post_02",
+      "porch_roof_or_eave_when_inside_frame"
+    ],
+
+    "stair_opening": {
+      "x_min": -0.9,
+      "x_max": 0.9,
+      "aligned_with": "STAIRS-01"
+    },
+
+    "forbidden": [
+      "porch_only_to_left_of_window",
+      "porch_only_to_right_of_window",
+      "clear_unobstructed_view_directly_from_window_to_path",
+      "continuous_solid_railing_without_stair_opening"
+    ]
+  },
+
+  "calculated_visibility": {
+    "source": "validate_porch_visibility.py",
+
+    "visible": [
+      {
+        "object": "PATH-3",
+        "reason": "clear_line_of_sight_through_porch"
+      },
+      {
+        "object": "LAMP-EXT-01",
+        "reason": "clear_line_of_sight_through_porch"
+      }
+    ],
+
+    "occluded": [
+      {
+        "object": "PATH-0",
+        "occluded_by": "PORCH-FLOOR"
+      },
+      {
+        "object": "PATH-1",
+        "occluded_by": "PORCH-POST-02"
+      },
+      {
+        "object": "PATH-2",
+        "occluded_by": "PORCH-RAILING-RIGHT"
+      },
+      {
+        "object": "LAMP-EXT-02",
+        "occluded_by": "PORCH-RAILING-RIGHT"
+      }
+    ]
+  },
+
+  "exterior": {
+    "path": {
+      "object": "PATH-01",
+      "full_path_visible": false,
+      "near_section_visible": false,
+      "middle_section_visible": false,
+      "far_section_visible": true,
+      "centered_in_frame": false,
+      "main_visual_axis": false
+    },
+
+    "lanterns": {
+      "LAMP-EXT-01": {
+        "visible": true,
+        "role": "farther_lantern"
+      },
+
+      "LAMP-EXT-02": {
+        "visible": false,
+        "occluded_by": "PORCH-RAILING-RIGHT",
+        "role": "nearer_lantern"
+      }
+    },
+
+    "vegetation": {
+      "density": "high",
+      "close_to_path": true,
+      "close_to_porch": true,
+      "must_match_scene_001": true
+    },
+
+    "tree_line": {
+      "density": "high",
+      "starts_close_to_cabin": true,
+      "distance_locked": true
+    },
+
+    "fence": {
+      "object": "FENCE-01",
+      "position_locked": true,
+      "visibility": "only_if_line_of_sight_allows"
+    }
+  },
+
+  "environment": {
+    "time_of_day": "night",
+    "weather": "heavy_rain",
+    "ground": "wet",
+    "exterior_light": "cold_blue_night",
+    "lantern_light": "warm_yellow",
+    "interior_light": "warm"
+  },
+
+  "interior": {
+    "status": "provisional",
+
+    "rule": "interior elements may be introduced only if they do not alter or contradict canonical exterior geometry",
+
+    "forbidden": [
+      "new_exterior_openings",
+      "new_exterior_buildings",
+      "moving_chimney",
+      "moving_front_window",
+      "moving_porch"
+    ]
+  },
+
+  "acceptance_test": [
+    "WINDOW-FRONT-01 preserves the canonical 3x3 pane structure",
+    "PORCH-01 appears directly in front of the window",
+    "PORCH-POST-02 may interrupt part of the view",
+    "PORCH-RAILING-RIGHT must block the calculated near exterior geometry",
+    "PATH-0 must not be clearly visible",
+    "PATH-1 must not be clearly visible",
+    "PATH-2 must not be clearly visible",
+    "PATH-3 may be visible",
+    "LAMP-EXT-01 must remain visible",
+    "LAMP-EXT-02 must not appear clearly because it is behind PORCH-RAILING-RIGHT",
+    "PATH-01 must not be centered in the window",
+    "vegetation remains dense and close",
+    "all differences from SCENE-001 must be explainable by camera position and occlusion"
+  ]
+}

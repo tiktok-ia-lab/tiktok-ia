@@ -1,0 +1,480 @@
+{
+  "schema_version": "2.1",
+  "experiment_id": "EXP-001",
+  "title": "Cabaña bajo la lluvia",
+
+  "source_of_truth": {
+    "primary_scene": "SCENE-001",
+    "role": "canonical_exterior_reference"
+  },
+
+  "coordinate_system": {
+    "type": "normalized_local_3d",
+    "origin_object": "DOOR-01",
+    "origin_description": "center of main front door at ground level",
+    "axes": {
+      "x": "left_to_right_when_looking_toward_cabin",
+      "y": "from_cabin_outward_along_path",
+      "z": "ground_to_up"
+    },
+    "unit": "normalized_door_width"
+  },
+
+  "environment": {
+    "time_of_day": "night",
+    "weather": "heavy_rain",
+    "season": "unspecified",
+    "terrain": "wet_rocky_forest_floor",
+    "lighting": {
+      "ambient": "cold_blue_night",
+      "cabin": "warm_interior_light",
+      "path_lanterns": "warm_yellow"
+    }
+  },
+
+  "zones": {
+    "ZONE-CABIN": {
+      "type": "architecture_zone",
+      "description": "main cabin volume and porch"
+    },
+
+    "ZONE-PATH": {
+      "type": "circulation_zone",
+      "description": "stone path from foreground to porch stairs"
+    },
+
+    "ZONE-VEG-LEFT": {
+      "type": "vegetation_zone",
+      "side": "left_of_PATH-01",
+      "density": "high",
+      "contents": [
+        "ferns",
+        "moss",
+        "rocks",
+        "low_forest_plants"
+      ]
+    },
+
+    "ZONE-VEG-RIGHT": {
+      "type": "vegetation_zone",
+      "side": "right_of_PATH-01",
+      "density": "high",
+      "contents": [
+        "ferns",
+        "moss",
+        "rocks",
+        "low_forest_plants"
+      ]
+    },
+
+    "ZONE-FOREST": {
+      "type": "forest_zone",
+      "density": "high",
+      "dominant_tree_type": "conifer",
+      "surrounds_cabin": true
+    }
+  },
+
+  "objects": {
+    "CABIN-01": {
+      "category": "architecture",
+      "type": "rustic_log_cabin",
+      "description": {
+        "material": "dark_wet_timber_logs",
+        "roof": "steep_pitched_roof",
+        "floors_visible": 2
+      },
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      "persistence": {
+        "position": "locked",
+        "appearance": "locked"
+      }
+    },
+
+    "DOOR-01": {
+      "category": "architecture",
+      "type": "main_front_door",
+      "description": {
+        "material": "wood",
+        "shape": "rectangular",
+        "color": "dark_warm_brown"
+      },
+      "anchor": {
+        "parent": "CABIN-01",
+        "facade": "front",
+        "position": "central"
+      },
+      "state": {
+        "open": false
+      },
+      "persistence": {
+        "position": "locked",
+        "appearance": "locked",
+        "state": "locked"
+      }
+    },
+
+    "PORCH-01": {
+      "category": "architecture",
+      "type": "covered_front_porch",
+      "anchor": {
+        "parent": "CABIN-01",
+        "facade": "front",
+        "coverage": "full_front_facade"
+      },
+      "description": {
+        "material": "wood",
+        "has_railing": true,
+        "has_steps": true,
+        "roofed": true,
+        "extends_in_front_of_front_window": true
+      },
+      "persistence": {
+        "position": "locked",
+        "appearance": "locked",
+        "dimensions": "locked"
+      }
+    },
+
+    "STAIRS-01": {
+      "category": "architecture",
+      "type": "front_steps",
+      "anchor": {
+        "parent": "PORCH-01",
+        "alignment": "aligned_with_DOOR-01"
+      },
+      "persistence": {
+        "position": "locked",
+        "appearance": "locked"
+      }
+    },
+
+    "CHIMNEY-01": {
+      "category": "architecture",
+      "type": "stone_chimney",
+      "description": {
+        "material": "dark_stone",
+        "shape": "vertical_rectangular_stack"
+      },
+      "anchor": {
+        "parent": "CABIN-01",
+        "side_when_viewed_from_front": "left"
+      },
+      "persistence": {
+        "position": "locked",
+        "appearance": "locked"
+      }
+    },
+
+    "WINDOW-FRONT-01": {
+      "category": "architecture",
+      "type": "front_ground_floor_window",
+      "anchor": {
+        "parent": "CABIN-01",
+        "facade": "front",
+        "side_of_DOOR-01": "right",
+        "behind": "PORCH-01"
+      },
+      "structure": {
+        "frame_material": "dark_wood",
+        "pane_layout": {
+          "columns": 3,
+          "rows": 3
+        },
+        "vertical_mullions": 2,
+        "horizontal_mullions": 2
+      },
+      "state": {
+        "interior_light": "on"
+      },
+      "persistence": {
+        "position": "locked",
+        "appearance": "locked",
+        "pane_layout": "locked"
+      }
+    },
+
+    "WINDOW-LEFT-01": {
+      "category": "architecture",
+      "type": "left_side_ground_floor_window",
+      "anchor": {
+        "parent": "CABIN-01",
+        "side": "left"
+      },
+      "state": {
+        "interior_light": "on"
+      },
+      "persistence": {
+        "position": "locked",
+        "appearance": "locked"
+      }
+    },
+
+    "WINDOW-UPPER-01": {
+      "category": "architecture",
+      "type": "upper_front_window",
+      "anchor": {
+        "parent": "CABIN-01",
+        "facade": "front",
+        "position": "upper_center"
+      },
+      "state": {
+        "interior_light": "on"
+      },
+      "persistence": {
+        "position": "locked",
+        "appearance": "locked"
+      }
+    },
+
+    "PATH-01": {
+      "category": "terrain",
+      "type": "irregular_stone_path",
+      "description": {
+        "surface": "natural_flat_stones",
+        "state": "wet",
+        "shape": "slightly_irregular",
+        "direction": "foreground_to_STAIRS-01"
+      },
+      "persistence": {
+        "position": "locked",
+        "shape": "locked",
+        "width": "locked"
+      }
+    },
+
+    "FENCE-01": {
+      "category": "exterior_structure",
+      "type": "wooden_post_and_rail_fence",
+      "anchor": {
+        "zone": "ZONE-PATH",
+        "side_when_looking_toward_cabin": "right"
+      },
+      "description": {
+        "material": "dark_wet_wood",
+        "orientation": "roughly_parallel_to_PATH-01"
+      },
+      "persistence": {
+        "position": "locked",
+        "appearance": "locked",
+        "height": "locked"
+      }
+    },
+
+    "LAMP-EXT-01": {
+      "category": "lighting",
+      "type": "short_path_lantern",
+      "anchor": {
+        "zone": "ZONE-VEG-LEFT",
+        "side_when_looking_toward_cabin": "left"
+      },
+      "description": {
+        "material": "dark_metal_and_glass",
+        "mount": "short_post",
+        "height_class": "low",
+        "light": "warm_yellow"
+      },
+      "state": {
+        "lit": true,
+        "wet": true
+      },
+      "persistence": {
+        "position": "locked",
+        "height": "locked",
+        "appearance": "locked",
+        "state": "locked"
+      }
+    },
+
+    "LAMP-EXT-02": {
+      "category": "lighting",
+      "type": "short_path_lantern",
+      "anchor": {
+        "zone": "ZONE-VEG-RIGHT",
+        "side_when_looking_toward_cabin": "right",
+        "closer_to_cabin_than": "LAMP-EXT-01"
+      },
+      "description": {
+        "material": "dark_metal_and_glass",
+        "mount": "short_post",
+        "height_class": "low",
+        "light": "warm_yellow"
+      },
+      "state": {
+        "lit": true,
+        "wet": true
+      },
+      "persistence": {
+        "position": "locked",
+        "height": "locked",
+        "appearance": "locked",
+        "state": "locked"
+      }
+    },
+
+    "TREE-LINE-01": {
+      "category": "vegetation_structure",
+      "type": "dense_conifer_tree_line",
+      "anchor": {
+        "zone": "ZONE-FOREST"
+      },
+      "description": {
+        "density": "high",
+        "height_class": "tall",
+        "starts_close_to_cabin_sides": true
+      },
+      "persistence": {
+        "position": "locked",
+        "density": "locked"
+      }
+    }
+  },
+
+  "relations": [
+    {
+      "subject": "PATH-01",
+      "relation": "aligned_with",
+      "object": "DOOR-01",
+      "strength": "hard"
+    },
+    {
+      "subject": "STAIRS-01",
+      "relation": "connects",
+      "object": "PATH-01",
+      "strength": "hard"
+    },
+    {
+      "subject": "PORCH-01",
+      "relation": "directly_in_front_of",
+      "object": "WINDOW-FRONT-01",
+      "strength": "hard"
+    },
+    {
+      "subject": "FENCE-01",
+      "relation": "right_of",
+      "object": "PATH-01",
+      "viewpoint": "looking_toward_cabin",
+      "strength": "hard"
+    },
+    {
+      "subject": "LAMP-EXT-01",
+      "relation": "left_of",
+      "object": "PATH-01",
+      "viewpoint": "looking_toward_cabin",
+      "strength": "hard"
+    },
+    {
+      "subject": "LAMP-EXT-02",
+      "relation": "right_of",
+      "object": "PATH-01",
+      "viewpoint": "looking_toward_cabin",
+      "strength": "hard"
+    },
+    {
+      "subject": "LAMP-EXT-01",
+      "relation": "farther_from",
+      "object": "CABIN-01",
+      "than": "LAMP-EXT-02",
+      "strength": "hard"
+    },
+    {
+      "subject": "CHIMNEY-01",
+      "relation": "left_of",
+      "object": "DOOR-01",
+      "viewpoint": "looking_toward_cabin",
+      "strength": "hard"
+    },
+    {
+      "subject": "WINDOW-FRONT-01",
+      "relation": "right_of",
+      "object": "DOOR-01",
+      "viewpoint": "looking_toward_cabin",
+      "strength": "hard"
+    },
+    {
+      "subject": "WINDOW-UPPER-01",
+      "relation": "above",
+      "object": "DOOR-01",
+      "strength": "hard"
+    },
+    {
+      "subject": "TREE-LINE-01",
+      "relation": "surrounds",
+      "object": "CABIN-01",
+      "strength": "hard"
+    }
+  ],
+
+  "cameras": {
+    "CAM-001": {
+      "scene": "SCENE-001",
+      "position": "centered_on_PATH-01_in_front_of_cabin",
+      "target": "DOOR-01",
+      "height": "human_eye_level",
+      "orientation": "looking_toward_cabin",
+      "aspect_ratio": "9:16"
+    }
+  },
+
+  "scenes": {
+    "SCENE-001": {
+      "camera": "CAM-001",
+      "role": "canonical_exterior",
+      "visible_objects": [
+        "CABIN-01",
+        "DOOR-01",
+        "PORCH-01",
+        "STAIRS-01",
+        "CHIMNEY-01",
+        "WINDOW-FRONT-01",
+        "WINDOW-LEFT-01",
+        "WINDOW-UPPER-01",
+        "PATH-01",
+        "FENCE-01",
+        "LAMP-EXT-01",
+        "LAMP-EXT-02",
+        "TREE-LINE-01"
+      ],
+      "visible_zones": [
+        "ZONE-VEG-LEFT",
+        "ZONE-VEG-RIGHT",
+        "ZONE-FOREST"
+      ]
+    }
+  },
+
+  "continuity_rules": {
+    "architecture_persistent": true,
+    "terrain_persistent": true,
+    "vegetation_layout_persistent": true,
+    "fixed_objects_persistent": true,
+    "new_objects_forbidden_by_default": true,
+    "new_architectural_openings_forbidden": true,
+    "camera_rule": "camera_may_move_but_world_geometry_must_not_change",
+
+    "hard_rules": [
+      "PORCH-01 must remain directly in front of WINDOW-FRONT-01",
+      "WINDOW-FRONT-01 must preserve its wooden pane layout",
+      "LAMP-EXT-01 must remain farther from CABIN-01 than LAMP-EXT-02",
+      "FENCE-01 must remain on the same physical side of PATH-01",
+      "vegetation density and tree-line distance must remain stable"
+    ],
+
+    "allowed_causes_of_visual_change": [
+      "camera_translation",
+      "camera_rotation",
+      "perspective",
+      "occlusion",
+      "depth",
+      "lens_change",
+      "defined_weather_motion",
+      "defined_narrative_action"
+    ]
+  }
+}

@@ -1,0 +1,376 @@
+{
+  "schema_version": "1.4",
+  "experiment_id": "EXP-001",
+  "reference_scene": "SCENE-001",
+
+  "normalization": {
+    "reference_object": "DOOR-01",
+    "reference_dimension": "width",
+    "reference_value": 1.0
+  },
+
+  "coordinate_system": {
+    "origin": "center_of_DOOR-01_at_ground_level",
+    "x": "left_to_right_when_looking_toward_cabin",
+    "y": "from_cabin_outward_along_path",
+    "z": "vertical"
+  },
+
+  "objects": {
+    "CABIN-01": {
+      "type": "building",
+      "position": {
+        "x": 0.0,
+        "y": -2.25,
+        "z": 0.0
+      },
+      "dimensions": {
+        "width": 6.0,
+        "depth": 4.5
+      },
+      "walls": {
+        "base_z": 0.0,
+        "top_z": 2.8
+      },
+      "front_facade": {
+        "y": 0.0
+      },
+      "left_side": {
+        "must_exist": true,
+        "must_be_visible_from_CAM-001": true
+      },
+      "confidence": "medium"
+    },
+
+    "ROOF-01": {
+      "type": "gable_roof",
+      "belongs_to": "CABIN-01",
+      "ridge_axis": "y",
+      "center": {
+        "x": 0.0,
+        "y": -2.25
+      },
+      "width": 6.6,
+      "depth": 5.0,
+      "eave_z": 2.8,
+      "ridge_z": 4.6,
+      "overhang": {
+        "front": 0.25,
+        "rear": 0.25,
+        "left": 0.3,
+        "right": 0.3
+      },
+      "confidence": "medium"
+    },
+
+    "CHIMNEY-01": {
+      "type": "stone_chimney",
+      "position": {
+        "x": -2.0,
+        "y": -1.0,
+        "z": 0.0
+      },
+      "dimensions": {
+        "width": 0.65,
+        "depth": 0.75,
+        "base_z": 0.0,
+        "top_z": 4.35
+      },
+      "side_when_looking_toward_cabin": "left",
+      "must_project_above_roof": true,
+      "confidence": "medium"
+    },
+
+    "DOOR-01": {
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "dimensions": {
+        "width": 1.0,
+        "height": 2.1
+      },
+      "confidence": "high"
+    },
+
+    "PORCH-01": {
+      "position_relative_to_facade": "directly_in_front",
+      "volume": {
+        "x_min": -2.8,
+        "x_max": 3.2,
+        "y_min": 0.0,
+        "y_max": 1.4,
+        "z_min": 0.0,
+        "z_max": 2.5
+      },
+      "floor": {
+        "z": 0.15,
+        "thickness": 0.15
+      },
+      "roof": {
+        "z_min": 2.2,
+        "z_max": 2.5
+      },
+      "railing": {
+        "front_y": 1.25,
+        "z_min": 0.25,
+        "z_max": 1.0,
+        "segments": [
+          {
+            "id": "PORCH-RAILING-LEFT",
+            "x_min": -2.8,
+            "x_max": -0.9
+          },
+          {
+            "id": "PORCH-RAILING-RIGHT",
+            "x_min": 0.9,
+            "x_max": 3.2
+          }
+        ],
+        "stair_opening": {
+          "x_min": -0.9,
+          "x_max": 0.9,
+          "aligned_with": "STAIRS-01"
+        }
+      },
+      "posts": [
+        {
+          "id": "PORCH-POST-01",
+          "x": -2.4,
+          "y": 1.2,
+          "z_min": 0.0,
+          "z_max": 2.4
+        },
+        {
+          "id": "PORCH-POST-02",
+          "x": 0.8,
+          "y": 1.2,
+          "z_min": 0.0,
+          "z_max": 2.4
+        },
+        {
+          "id": "PORCH-POST-03",
+          "x": 2.8,
+          "y": 1.2,
+          "z_min": 0.0,
+          "z_max": 2.4
+        }
+      ],
+      "covers_objects": [
+        "DOOR-01",
+        "WINDOW-FRONT-01"
+      ],
+      "confidence": "medium"
+    },
+
+    "STAIRS-01": {
+      "center": {
+        "x": 0.0,
+        "y": 0.8,
+        "z": 0.0
+      },
+      "width": 1.8,
+      "connects": [
+        "PORCH-01",
+        "PATH-01"
+      ],
+      "confidence": "medium"
+    },
+
+    "PATH-01": {
+      "centerline": [
+        {
+          "x": 0.0,
+          "y": 1.2
+        },
+        {
+          "x": 0.05,
+          "y": 3.0
+        },
+        {
+          "x": 0.15,
+          "y": 5.0
+        },
+        {
+          "x": 0.35,
+          "y": 7.0
+        }
+      ],
+      "approx_width": 1.6,
+      "surface": "irregular_wet_stone",
+      "continuous_rectangular_slab_forbidden": true,
+      "confidence": "medium"
+    },
+
+    "LAMP-EXT-01": {
+      "position": {
+        "x": -1.65,
+        "y": 4.9,
+        "z": 0.0
+      },
+      "distance_from_facade": 4.9,
+      "distance_from_path_center": 1.65,
+      "height": 0.65,
+      "side_of_path": "left",
+      "role": "farther_lantern",
+      "confidence": "medium"
+    },
+
+    "LAMP-EXT-02": {
+      "position": {
+        "x": 1.35,
+        "y": 2.8,
+        "z": 0.0
+      },
+      "distance_from_facade": 2.8,
+      "distance_from_path_center": 1.35,
+      "height": 0.55,
+      "side_of_path": "right",
+      "role": "nearer_lantern",
+      "confidence": "medium"
+    },
+
+    "FENCE-01": {
+      "side_of_path": "right",
+      "start": {
+        "x": 1.55,
+        "y": 4.4,
+        "z": 0.0
+      },
+      "direction": {
+        "x": 0.2,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "approx_height": 0.9,
+      "confidence": "medium"
+    },
+
+    "WINDOW-FRONT-01": {
+      "position_relative_to_DOOR-01": {
+        "x": 1.8,
+        "y": 0.0,
+        "z": 0.9
+      },
+      "orientation": {
+        "wall": "front_facade",
+        "normal_vector": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0
+        }
+      },
+      "dimensions": {
+        "width": 1.65,
+        "height": 1.45
+      },
+      "opening": {
+        "x_min": 0.975,
+        "x_max": 2.625,
+        "y": 0.0,
+        "z_min": 0.9,
+        "z_max": 2.35
+      },
+      "pane_layout": {
+        "columns": 3,
+        "rows": 3,
+        "vertical_mullions": 2,
+        "horizontal_mullions": 2,
+        "frame_material": "dark_wood",
+        "locked": true
+      },
+      "porch_relation": {
+        "PORCH-01": "directly_in_front_of_window",
+        "window_is_behind_porch": true
+      },
+      "view_expectation": {
+        "path_centered": false,
+        "path_visibility": "partial_or_offset_if_visible",
+        "porch_structure_expected": true,
+        "must_not_look_directly_down_path_axis": true
+      },
+      "confidence": "high"
+    },
+
+    "WINDOW-UPPER-01": {
+      "position_relative_to_DOOR-01": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 3.1
+      },
+      "dimensions": {
+        "width": 1.1,
+        "height": 0.9
+      },
+      "orientation": {
+        "wall": "front_gable"
+      },
+      "confidence": "medium"
+    },
+
+    "CAM-001": {
+      "role": "canonical_exterior_calibration",
+      "coordinate_space": "blender",
+      "locked": true,
+      "location": {
+        "x": 1.6,
+        "y": 15.5,
+        "z": 2.5
+      },
+      "target": {
+        "x": -0.15,
+        "y": 0.4,
+        "z": 1.65
+      },
+      "lens_mm": 50,
+      "confidence": "provisional_locked"
+    },
+
+    "TREE-LINE-01": {
+      "minimum_distance_from_cabin": 1.8,
+      "density": "high",
+      "height_class": "tall",
+      "confidence": "low"
+    },
+
+    "ZONE-VEG-LEFT": {
+      "path_side": "left",
+      "density": "high",
+      "average_height_range": [
+        0.1,
+        0.8
+      ],
+      "starts_near_path": true
+    },
+
+    "ZONE-VEG-RIGHT": {
+      "path_side": "right",
+      "density": "high",
+      "average_height_range": [
+        0.1,
+        0.8
+      ],
+      "starts_near_path": true
+    }
+  },
+
+  "hard_spatial_constraints": [
+    "CAM-001 remains fixed during geometry calibration",
+    "CHIMNEY-01 remains on the canonical left side of CABIN-01",
+    "CHIMNEY-01 projects above ROOF-01",
+    "WINDOW-FRONT-01 remains right of DOOR-01 when looking toward the cabin",
+    "WINDOW-UPPER-01 remains in the front gable",
+    "PORCH-01 extends directly in front of WINDOW-FRONT-01",
+    "WINDOW-FRONT-01 is physically behind PORCH-01",
+    "PORCH-01 railing has a central opening aligned with STAIRS-01",
+    "PORCH-01 railing must not be modeled as one continuous solid wall",
+    "view from WINDOW-FRONT-01 may pass through railing gaps and stair opening",
+    "WINDOW-FRONT-01 preserves exactly 3 columns and 3 rows of panes",
+    "PATH-01 must not be centered in the view through WINDOW-FRONT-01",
+    "PATH-01 must not be represented as a single rectangular slab in final geometry",
+    "LAMP-EXT-01 remains farther from CABIN-01 than LAMP-EXT-02",
+    "FENCE-01 remains right of PATH-01 when viewed toward cabin",
+    "vegetation density remains high on both sides of PATH-01"
+  ]
+}

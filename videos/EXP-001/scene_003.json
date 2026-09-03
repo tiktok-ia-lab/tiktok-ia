@@ -1,0 +1,97 @@
+{
+  "scene_id": "SCENE-003",
+  "experiment_id": "EXP-001",
+  "inherits_world_state": "world_state.json",
+  "world_state_version": "1.1",
+
+  "camera": {
+    "reference_scene": "SCENE-002",
+    "movement_from_reference": {
+      "translation": "move_left_within_same_room",
+      "rotation": "rotate_right_toward_CORNER-FRONT-RIGHT",
+      "height_change": "none"
+    },
+    "target": "FIRE-01",
+    "secondary_target": "TABLE-01",
+    "framing": "medium",
+    "lens": "normal",
+    "rule": "camera_moves_world_does_not"
+  },
+
+  "must_be_visible": [
+    "FIRE-01",
+    "WOOD-01",
+    "CHAIR-01",
+    "TABLE-01",
+    "CUP-01",
+    "LAMP-01",
+    "BOOK-01"
+  ],
+
+  "may_be_partially_visible": [
+    "WINDOW-01",
+    "WALL-FRONT",
+    "WALL-RIGHT"
+  ],
+
+  "may_be_out_of_frame": [
+    "DOOR-01",
+    "PATH-01",
+    "FENCE-01",
+    "LAMP-EXT-01"
+  ],
+
+  "must_not_exist_in_frame": [
+    "new_window",
+    "new_door",
+    "new_sofa",
+    "new_chair",
+    "new_table",
+    "new_book",
+    "new_book_stack",
+    "new_firewood_stack",
+    "new_decorative_furniture"
+  ],
+
+  "geometric_constraints": {
+    "FIRE-01": {
+      "must_remain_in": "CORNER-FRONT-RIGHT",
+      "must_touch": [
+        "WALL-FRONT",
+        "WALL-RIGHT"
+      ],
+      "must_not_appear_centered_on_single_flat_wall": true
+    },
+
+    "WOOD-01": {
+      "must_remain_relative_to": "FIRE-01",
+      "must_keep_same_side": true,
+      "must_keep_same_shape": true,
+      "must_keep_same_volume": true
+    },
+
+    "WINDOW-01": {
+      "must_remain_on": "WALL-FRONT",
+      "no_additional_windows": true
+    }
+  },
+
+  "prop_constraints": {
+    "CUP-01": "same_position_same_state",
+    "LAMP-01": "same_position_same_state",
+    "BOOK-01": "same_position_closed_single_book"
+  },
+
+  "acceptance_test": [
+    "no architectural element changes position",
+    "no additional opening appears",
+    "stove remains physically in the same corner",
+    "firewood remains identical and adjacent to stove",
+    "armchair remains identical",
+    "table remains identical",
+    "cup remains in place",
+    "lantern remains in place",
+    "book remains closed and unique",
+    "differences are explainable only by camera movement"
+  ]
+}

@@ -1,0 +1,308 @@
+{
+  "schema_version": "1.1",
+  "experiment_id": "EXP-001",
+  "title": "Cabaña bajo la lluvia",
+
+  "continuity_policy": {
+    "world_is_persistent": true,
+    "architecture_is_immutable": true,
+    "fixed_objects_are_immutable": true,
+    "movable_objects_are_frozen_between_scenes": true,
+    "camera_movement_does_not_modify_world": true,
+    "objects_may_leave_frame_but_may_not_move": true,
+    "new_architectural_elements_are_forbidden": true,
+    "new_furniture_is_forbidden": true,
+    "new_props_are_forbidden": true
+  },
+
+  "environment": {
+    "time_of_day": "night",
+    "weather": "heavy_rain",
+    "exterior": "pine_forest",
+    "terrain": "wet_rocky_ground_with_ferns",
+    "interior_light": [
+      "wood_stove_firelight",
+      "table_lantern_light"
+    ],
+    "exterior_light": [
+      "warm_path_lanterns"
+    ]
+  },
+
+  "room": {
+    "id": "ROOM-01",
+    "name": "living_room",
+    "shape": "rectangular",
+    "reference_orientation": {
+      "front": "wall_facing_main_path",
+      "back": "wall_opposite_front",
+      "left": "left_when_standing_inside_facing_front_wall",
+      "right": "right_when_standing_inside_facing_front_wall"
+    }
+  },
+
+  "architecture": {
+    "walls": {
+      "WALL-FRONT": {
+        "orientation": "front",
+        "openings": [
+          "DOOR-01",
+          "WINDOW-01"
+        ],
+        "forbidden_openings": [
+          "additional_windows",
+          "additional_doors"
+        ]
+      },
+
+      "WALL-RIGHT": {
+        "orientation": "right",
+        "openings": [],
+        "forbidden_openings": [
+          "windows",
+          "doors"
+        ]
+      },
+
+      "WALL-LEFT": {
+        "orientation": "left",
+        "openings": [],
+        "forbidden_openings": [
+          "windows",
+          "doors"
+        ]
+      },
+
+      "WALL-BACK": {
+        "orientation": "back",
+        "openings": [],
+        "forbidden_openings": [
+          "windows",
+          "doors"
+        ]
+      }
+    },
+
+    "corners": {
+      "CORNER-FRONT-RIGHT": {
+        "walls": [
+          "WALL-FRONT",
+          "WALL-RIGHT"
+        ]
+      },
+
+      "CORNER-FRONT-LEFT": {
+        "walls": [
+          "WALL-FRONT",
+          "WALL-LEFT"
+        ]
+      },
+
+      "CORNER-BACK-RIGHT": {
+        "walls": [
+          "WALL-BACK",
+          "WALL-RIGHT"
+        ]
+      },
+
+      "CORNER-BACK-LEFT": {
+        "walls": [
+          "WALL-BACK",
+          "WALL-LEFT"
+        ]
+      }
+    },
+
+    "DOOR-01": {
+      "type": "main_wooden_door",
+      "wall": "WALL-FRONT",
+      "position_on_wall": "left_side",
+      "state": "closed",
+      "immutable": true
+    },
+
+    "WINDOW-01": {
+      "type": "single_front_window",
+      "wall": "WALL-FRONT",
+      "position_on_wall": "center_right",
+      "state": "closed",
+      "surface": "rain_covered",
+      "immutable": true
+    },
+
+    "CHIMNEY-01": {
+      "type": "chimney_flue",
+      "anchor": "CORNER-FRONT-RIGHT",
+      "immutable": true
+    }
+  },
+
+  "fixed_interior_objects": {
+    "FIRE-01": {
+      "type": "wood_stove",
+      "anchor": "CORNER-FRONT-RIGHT",
+      "touches": [
+        "WALL-FRONT",
+        "WALL-RIGHT"
+      ],
+      "orientation": "diagonal_into_room",
+      "state": "lit",
+      "chimney_connection": "CHIMNEY-01",
+      "immutable": true,
+      "forbidden_changes": [
+        "move_to_flat_wall_center",
+        "move_to_other_corner",
+        "rotate_to_face_other_direction",
+        "change_stove_design"
+      ]
+    },
+
+    "WOOD-01": {
+      "type": "single_firewood_stack",
+      "anchor_object": "FIRE-01",
+      "position_relative_to_anchor": "right_side_of_stove_when_viewed_from_room",
+      "container": "none",
+      "shape": "compact_horizontal_stack",
+      "state": "stacked",
+      "immutable": true,
+      "forbidden_changes": [
+        "change_to_basket",
+        "change_to_vertical_stack",
+        "change_side_of_stove",
+        "change_volume_significantly",
+        "split_into_multiple_stacks"
+      ]
+    },
+
+    "CHAIR-01": {
+      "type": "single_armchair",
+      "position": "right_half_of_room",
+      "orientation": "angled_toward_table_and_stove",
+      "state": "stationary",
+      "features": [
+        "single_seat",
+        "blanket_on_arm"
+      ],
+      "immutable": true,
+      "forbidden_changes": [
+        "replace_with_sofa",
+        "replace_with_two_chairs",
+        "rotate_significantly",
+        "move_to_other_side_of_room"
+      ]
+    },
+
+    "TABLE-01": {
+      "type": "rustic_low_coffee_table",
+      "position": "in_front_of_CHAIR-01",
+      "orientation": "long_edge_parallel_to_front_wall",
+      "state": "stationary",
+      "immutable": true
+    }
+  },
+
+  "frozen_props": {
+    "CUP-01": {
+      "type": "dark_mug",
+      "parent": "TABLE-01",
+      "position_on_parent": "front_left_area",
+      "state": "steaming",
+      "immutable": true
+    },
+
+    "LAMP-01": {
+      "type": "small_table_lantern",
+      "parent": "TABLE-01",
+      "position_on_parent": "center_area",
+      "state": "lit",
+      "immutable": true
+    },
+
+    "BOOK-01": {
+      "type": "single_thick_book",
+      "parent": "TABLE-01",
+      "position_on_parent": "right_area",
+      "state": "closed",
+      "quantity": 1,
+      "immutable": true,
+      "forbidden_changes": [
+        "open_book",
+        "add_second_book",
+        "create_book_stack",
+        "move_book"
+      ]
+    }
+  },
+
+  "exterior_world": {
+    "PATH-01": {
+      "type": "stone_path",
+      "axis": "front_door_to_forest",
+      "state": "wet",
+      "immutable": true
+    },
+
+    "FENCE-01": {
+      "type": "wooden_fence",
+      "world_side_of_path": "right_when_looking_toward_cabin",
+      "inverse_view_side": "left_when_looking_out_from_cabin",
+      "immutable": true
+    },
+
+    "LAMP-EXT-01": {
+      "type": "prominent_path_lantern",
+      "world_side_of_path": "left_when_looking_toward_cabin",
+      "inverse_view_side": "right_when_looking_out_from_cabin",
+      "state": "lit",
+      "immutable": true
+    }
+  },
+
+  "scene_002_reference": {
+    "status": "interior_visual_canon",
+    "camera": {
+      "position": "interior_front_left_sector",
+      "direction": "toward_front_wall_and_exterior",
+      "height": "eye_level",
+      "lens": "moderate_wide"
+    },
+
+    "visible_architecture": [
+      "DOOR-01",
+      "WINDOW-01",
+      "CORNER-FRONT-RIGHT"
+    ],
+
+    "visible_objects": [
+      "FIRE-01",
+      "WOOD-01",
+      "CHAIR-01",
+      "TABLE-01",
+      "CUP-01",
+      "LAMP-01",
+      "BOOK-01",
+      "PATH-01",
+      "FENCE-01",
+      "LAMP-EXT-01"
+    ]
+  },
+
+  "hard_constraints": [
+    "FIRE-01 must remain anchored in CORNER-FRONT-RIGHT",
+    "FIRE-01 must visibly relate to both WALL-FRONT and WALL-RIGHT",
+    "WALL-RIGHT has no windows",
+    "WALL-RIGHT has no doors",
+    "no window may appear beside FIRE-01",
+    "WOOD-01 remains the same single horizontal stack",
+    "WOOD-01 remains on the same side of FIRE-01",
+    "CHAIR-01 remains one single armchair",
+    "TABLE-01 remains the same table",
+    "CUP-01 remains at the same table location",
+    "LAMP-01 remains at the same table location",
+    "BOOK-01 remains one closed thick book",
+    "DOOR-01 remains part of WALL-FRONT even when out of frame",
+    "WINDOW-01 remains the only visible front window",
+    "no new furniture may appear",
+    "no new architectural opening may appear"
+  ]
+}

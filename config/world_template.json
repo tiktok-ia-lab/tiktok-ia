@@ -1,0 +1,64 @@
+{
+  "schema_version": "2.0",
+
+  "project": {
+    "experiment_id": "EXP-XXX",
+    "title": "",
+    "description": ""
+  },
+
+  "coordinate_system": {
+    "type": "normalized_local_3d",
+    "origin": {
+      "description": "reference point chosen for the location",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "axes": {
+      "x": "left_to_right",
+      "y": "front_to_back",
+      "z": "ground_to_up"
+    },
+    "unit": "normalized"
+  },
+
+  "environment": {
+    "location_type": "",
+    "time_of_day": "",
+    "weather": "",
+    "season": "",
+    "ambient_conditions": [],
+    "global_visual_style": ""
+  },
+
+  "zones": {},
+
+  "objects": {},
+
+  "relations": [],
+
+  "cameras": {},
+
+  "scenes": {},
+
+  "continuity_rules": {
+    "architecture_persistent": true,
+    "terrain_persistent": true,
+    "vegetation_persistent": true,
+    "fixed_objects_persistent": true,
+    "movable_objects_frozen_by_default": true,
+    "new_objects_forbidden_by_default": true,
+
+    "allowed_causes_of_visual_change": [
+      "camera_translation",
+      "camera_rotation",
+      "camera_lens_change",
+      "perspective",
+      "occlusion",
+      "depth",
+      "lighting_change_defined_by_scene",
+      "explicit_narrative_action"
+    ]
+  }
+}

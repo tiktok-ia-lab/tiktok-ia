@@ -1,0 +1,33 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Database / generated data
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# Blender generated files
+*.blend
+*.blend1
+*.blend2
+*.blend@
+*.blend~
+
+# Generated renders
+videos/*/blender/renders/
+
+# Manual backups
+*.bak
+*_backup.json
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
