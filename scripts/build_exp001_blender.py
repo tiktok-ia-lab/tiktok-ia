@@ -943,6 +943,85 @@ def add_conifer(name, x, y, height, material_trunk, material_needles):
 
 
 
+def add_rain_field(material):
+    """Deterministic rain blocking for CAM-001."""
+
+    drop_count = 420
+
+    for i in range(drop_count):
+        # Deterministic pseudo-distribution. No random module.
+        x = -6.5 + ((i * 37) % 130) / 10.0
+        y =  1.5 + ((i * 53) % 130) / 10.0
+        z =  0.4 + ((i * 29) % 55) / 10.0
+
+        # Three deterministic drop lengths.
+        length = 0.10 + (i % 4) * 0.035
+
+        bpy.ops.mesh.primitive_cylinder_add(
+            vertices=6,
+            radius=0.003,
+            depth=length,
+            location=(x, y, z)
+        )
+
+        drop = bpy.context.object
+        drop.name = f"RAIN_{i + 1:03d}"
+
+        # Slight wind slant.
+        drop.rotation_euler[1] = math.radians(-12.0)
+
+        drop.data.materials.append(material)
+
+
+
+def add_fog_volume(name, location, scale, density):
+    """Very light local atmospheric fog volume."""
+
+    bpy.ops.mesh.primitive_cube_add(
+        location=location
+    )
+
+    fog = bpy.context.object
+    fog.name = name
+    fog.scale = scale
+
+    mat = bpy.data.materials.new(
+        name=f"{name}_MATERIAL"
+    )
+
+    mat.use_nodes = True
+
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+
+    nodes.clear()
+
+    output = nodes.new(
+        "ShaderNodeOutputMaterial"
+    )
+
+    volume = nodes.new(
+        "ShaderNodeVolumePrincipled"
+    )
+
+    volume.inputs["Density"].default_value = density
+
+    volume.inputs["Color"].default_value = (
+        0.32,
+        0.40,
+        0.50,
+        1.0
+    )
+
+    links.new(
+        volume.outputs["Volume"],
+        output.inputs["Volume"]
+    )
+
+    fog.data.materials.append(mat)
+
+
+
 def render_camera(
     scene,
     camera,
@@ -997,9 +1076,9 @@ scene.render.image_settings.file_format = (
 scene.render.film_transparent = False
 
 scene.world.color = (
-    0.015,
-    0.020,
-    0.030
+    0.008,
+    0.018,
+    0.032
 )
 
 try:
@@ -1058,6 +1137,12 @@ mat_lamp = make_material(
     "MAT_LAMP",
     (0.80, 0.48, 0.08)
 )
+
+mat_rain = make_material(
+    "MAT_RAIN",
+    (0.42, 0.55, 0.68)
+)
+
 
 mat_tree_trunk = make_material(
     "MAT_TREE_TRUNK",
@@ -1969,6 +2054,15 @@ for name, canonical_x, y, height in tree_specs:
         mat_tree_trunk,
         mat_tree_needles
     )
+
+
+# ============================================================
+# RAIN — PROVISIONAL / DETERMINISTIC
+# ============================================================
+
+add_rain_field(
+    material=mat_rain
+)
 
 
 # ============================================================
