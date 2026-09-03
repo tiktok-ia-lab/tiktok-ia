@@ -882,6 +882,26 @@ def add_path_stones(
 # RENDER
 # ============================================================
 
+def add_vegetation_cluster(name, x, y, height, radius, material):
+    """Provisional deterministic low-poly vegetation."""
+
+    bpy.ops.mesh.primitive_ico_sphere_add(
+        subdivisions=1,
+        radius=1.0,
+        location=(x, y, height * 0.42)
+    )
+
+    shrub = bpy.context.object
+    shrub.name = name
+    shrub.scale = (
+        radius,
+        radius * 0.82,
+        height * 0.42
+    )
+    shrub.data.materials.append(material)
+
+
+
 def render_camera(
     scene,
     camera,
@@ -997,6 +1017,12 @@ mat_lamp = make_material(
     "MAT_LAMP",
     (0.80, 0.48, 0.08)
 )
+
+mat_vegetation = make_material(
+    "MAT_VEGETATION",
+    (0.055, 0.11, 0.045)
+)
+
 
 mat_ground = make_material(
     "MAT_GROUND",
@@ -1650,6 +1676,46 @@ add_path_stones(
     path_width=path["approx_width"],
     material=mat_path
 )
+
+
+
+# ============================================================
+# LOW VEGETATION — PROVISIONAL / DETERMINISTIC
+# ============================================================
+
+vegetation_specs = [
+    ("VEG_LEFT_01",  -1.8, 1.9, 0.45, 0.38),
+    ("VEG_LEFT_02",  -2.2, 2.6, 0.60, 0.46),
+    ("VEG_LEFT_03",  -1.7, 3.3, 0.52, 0.42),
+    ("VEG_LEFT_04",  -2.5, 3.7, 0.72, 0.52),
+    ("VEG_LEFT_05",  -1.9, 4.4, 0.58, 0.44),
+    ("VEG_LEFT_06",  -2.7, 5.0, 0.78, 0.56),
+    ("VEG_LEFT_07",  -1.8, 5.6, 0.48, 0.40),
+    ("VEG_LEFT_08",  -2.6, 6.1, 0.68, 0.50),
+    ("VEG_LEFT_09",  -1.9, 6.7, 0.55, 0.43),
+    ("VEG_LEFT_10",  -2.8, 7.1, 0.74, 0.54),
+
+    ("VEG_RIGHT_01",  1.7, 1.8, 0.48, 0.40),
+    ("VEG_RIGHT_02",  2.3, 2.4, 0.66, 0.48),
+    ("VEG_RIGHT_03",  1.8, 3.1, 0.54, 0.42),
+    ("VEG_RIGHT_04",  2.6, 3.6, 0.76, 0.54),
+    ("VEG_RIGHT_05",  1.9, 4.2, 0.50, 0.40),
+    ("VEG_RIGHT_06",  2.8, 4.8, 0.70, 0.52),
+    ("VEG_RIGHT_07",  2.0, 5.5, 0.58, 0.44),
+    ("VEG_RIGHT_08",  2.9, 6.0, 0.80, 0.56),
+    ("VEG_RIGHT_09",  2.1, 6.6, 0.52, 0.42),
+    ("VEG_RIGHT_10",  3.0, 7.1, 0.72, 0.52),
+]
+
+for name, canonical_x, y, height, radius in vegetation_specs:
+    add_vegetation_cluster(
+        name,
+        bx(canonical_x),
+        y,
+        height,
+        radius,
+        mat_vegetation
+    )
 
 
 # ============================================================
