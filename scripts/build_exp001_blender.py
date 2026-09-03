@@ -902,6 +902,47 @@ def add_vegetation_cluster(name, x, y, height, radius, material):
 
 
 
+def add_conifer(name, x, y, height, material_trunk, material_needles):
+    """Deterministic low-poly conifer for TREE-LINE blocking."""
+
+    trunk_height = height * 0.38
+
+    add_cylinder(
+        f"{name}_TRUNK",
+        (x, y, trunk_height / 2),
+        radius=height * 0.035,
+        depth=trunk_height,
+        material=material_trunk
+    )
+
+    crown_specs = [
+        (0.38, 0.42, 0.30),
+        (0.55, 0.34, 0.27),
+        (0.70, 0.25, 0.23),
+    ]
+
+    for i, (z_ratio, radius_ratio, depth_ratio) in enumerate(
+        crown_specs,
+        start=1
+    ):
+        bpy.ops.mesh.primitive_cone_add(
+            vertices=8,
+            radius1=height * radius_ratio,
+            radius2=0.0,
+            depth=height * depth_ratio,
+            location=(
+                x,
+                y,
+                height * z_ratio
+            )
+        )
+
+        crown = bpy.context.object
+        crown.name = f"{name}_CROWN_{i}"
+        crown.data.materials.append(material_needles)
+
+
+
 def render_camera(
     scene,
     camera,
@@ -1017,6 +1058,17 @@ mat_lamp = make_material(
     "MAT_LAMP",
     (0.80, 0.48, 0.08)
 )
+
+mat_tree_trunk = make_material(
+    "MAT_TREE_TRUNK",
+    (0.10, 0.055, 0.025)
+)
+
+mat_tree_needles = make_material(
+    "MAT_TREE_NEEDLES",
+    (0.025, 0.065, 0.030)
+)
+
 
 mat_vegetation = make_material(
     "MAT_VEGETATION",
@@ -1882,6 +1934,41 @@ for i in range(
         rail.rotation_euler[2] = (
             angle
         )
+
+
+
+# ============================================================
+# TREE LINE — PROVISIONAL / DETERMINISTIC
+# ============================================================
+
+tree_specs = [
+    ("TREE_01", -5.0, -1.5, 5.8),
+    ("TREE_02", -5.8, -3.2, 7.0),
+    ("TREE_03", -4.8, -5.0, 6.3),
+    ("TREE_04", -3.8, -6.2, 7.5),
+
+    ("TREE_05", -2.0, -6.5, 6.8),
+    ("TREE_06",  0.0, -6.8, 7.8),
+    ("TREE_07",  2.0, -6.5, 6.6),
+    ("TREE_08",  3.8, -6.0, 7.4),
+
+    ("TREE_09",  4.9, -4.8, 6.5),
+    ("TREE_10",  5.8, -3.0, 7.2),
+    ("TREE_11",  5.0, -1.2, 5.9),
+
+    ("TREE_12", -6.2,  0.8, 6.6),
+    ("TREE_13",  6.3,  0.6, 6.9),
+]
+
+for name, canonical_x, y, height in tree_specs:
+    add_conifer(
+        name,
+        bx(canonical_x),
+        y,
+        height,
+        mat_tree_trunk,
+        mat_tree_needles
+    )
 
 
 # ============================================================
