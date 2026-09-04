@@ -1538,6 +1538,106 @@ add_front_wall_segment(
 
 
 # ============================================================
+# INTERIOR — BASIC STRUCTURE
+# ============================================================
+
+interior_width = (
+    cabin_width
+    - 2 * wall_thickness
+)
+
+interior_depth = (
+    cabin_depth
+    - 2 * wall_thickness
+)
+
+interior_center_y = (
+    cabin_y
+)
+
+
+# ------------------------------------------------------------
+# FLOOR
+# ------------------------------------------------------------
+
+add_box(
+    "INTERIOR-FLOOR",
+    (
+        cabin_x,
+        interior_center_y,
+        wall_base_z + 0.05,
+    ),
+    (
+        interior_width,
+        interior_depth,
+        0.10,
+    ),
+    mat_porch,
+)
+
+
+# ------------------------------------------------------------
+# CEILING
+# ------------------------------------------------------------
+
+add_box(
+    "INTERIOR-CEILING",
+    (
+        cabin_x,
+        interior_center_y,
+        wall_top_z - 0.06,
+    ),
+    (
+        interior_width,
+        interior_depth,
+        0.12,
+    ),
+    mat_cabin,
+)
+
+
+# ------------------------------------------------------------
+# WARM INTERIOR LIGHT
+# ------------------------------------------------------------
+
+interior_light_data = bpy.data.lights.new(
+    name="INTERIOR-WARM-LIGHT",
+    type="AREA",
+)
+
+interior_light_data.energy = 180
+interior_light_data.shape = "DISK"
+interior_light_data.size = 2.0
+
+interior_light_data.color = (
+    1.0,
+    0.55,
+    0.22,
+)
+
+interior_light_obj = bpy.data.objects.new(
+    "INTERIOR-WARM-LIGHT",
+    interior_light_data,
+)
+
+bpy.context.collection.objects.link(
+    interior_light_obj
+)
+
+interior_light_obj.location = (
+    cabin_x,
+    cabin_y - 0.35,
+    2.35,
+)
+
+interior_light_obj.rotation_euler = (
+    0.0,
+    0.0,
+    0.0,
+)
+
+
+# ============================================================
 # ROOF + GABLE
 # ============================================================
 
@@ -1690,17 +1790,19 @@ window_center_z = (
 )
 
 
+# Glass/pane sits inside the physical wall thickness.
+# The same window is seen from exterior and interior.
 window_panel = add_box(
     "WINDOW-FRONT-01",
-    point_xyz(
-        wx,
-        wy + 0.04,
-        window_center_z
+    (
+        bx(wx),
+        front_y - wall_thickness / 2,
+        window_center_z,
     ),
     (
         ww,
-        0.06,
-        wh
+        0.02,
+        wh,
     ),
     mat_window
 )
@@ -1724,6 +1826,71 @@ rows = (
 
 mullion_width = 0.06
 
+frame_width = 0.10
+frame_depth = wall_thickness + 0.08
+
+# Physical perimeter frame shared by exterior and interior.
+
+add_box(
+    "WINDOW_FRONT_FRAME_LEFT",
+    (
+        bx(wx + ww / 2 - frame_width / 2),
+        front_y - wall_thickness / 2,
+        window_center_z,
+    ),
+    (
+        frame_width,
+        frame_depth,
+        wh,
+    ),
+    mat_cabin,
+)
+
+add_box(
+    "WINDOW_FRONT_FRAME_RIGHT",
+    (
+        bx(wx - ww / 2 + frame_width / 2),
+        front_y - wall_thickness / 2,
+        window_center_z,
+    ),
+    (
+        frame_width,
+        frame_depth,
+        wh,
+    ),
+    mat_cabin,
+)
+
+add_box(
+    "WINDOW_FRONT_FRAME_TOP",
+    (
+        bx(wx),
+        front_y - wall_thickness / 2,
+        wz + wh - frame_width / 2,
+    ),
+    (
+        ww,
+        frame_depth,
+        frame_width,
+    ),
+    mat_cabin,
+)
+
+add_box(
+    "WINDOW_FRONT_FRAME_BOTTOM",
+    (
+        bx(wx),
+        front_y - wall_thickness / 2,
+        wz + frame_width / 2,
+    ),
+    (
+        ww,
+        frame_depth,
+        frame_width,
+    ),
+    mat_cabin,
+)
+
 
 for i in range(
     1,
@@ -1738,15 +1905,15 @@ for i in range(
 
     add_box(
         f"WINDOW_FRONT_MULLION_V_{i}",
-        point_xyz(
-            canonical_x,
-            wy,
-            window_center_z
+        (
+            bx(canonical_x),
+            front_y - wall_thickness / 2,
+            window_center_z,
         ),
         (
             mullion_width,
-            0.10,
-            wh
+            wall_thickness + 0.06,
+            wh,
         ),
         mat_cabin
     )
@@ -1764,15 +1931,15 @@ for i in range(
 
     add_box(
         f"WINDOW_FRONT_MULLION_H_{i}",
-        point_xyz(
-            wx,
-            wy,
-            z
+        (
+            bx(wx),
+            front_y - wall_thickness / 2,
+            z,
         ),
         (
             ww,
-            0.10,
-            mullion_width
+            wall_thickness + 0.06,
+            mullion_width,
         ),
         mat_cabin
     )
@@ -2401,13 +2568,13 @@ cam2 = add_camera(
     "CAM-002",
     (
         bx(1.8),
-        -1.0,
+        -2.6,
         1.55
     ),
     (
         bx(1.8),
-        5.0,
-        1.40
+        0.0,
+        1.625
     ),
     lens=32
 )
