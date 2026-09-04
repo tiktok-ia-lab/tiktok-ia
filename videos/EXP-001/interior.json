@@ -4,93 +4,109 @@
   "interior_id": "INTERIOR-01",
   "room_id": "ROOM-01",
   "status": "draft",
-
   "references": {
     "geometry_source": "geometry.json",
     "geometry_parent": "CABIN-01",
     "coordinate_system": "inherit_geometry",
     "world_space": true
   },
-
   "room": {
     "id": "ROOM-01",
     "persistent": true,
     "camera_independent": true,
     "locked_to_geometry": true
   },
-
   "architecture": {
     "INTERIOR-FLOOR": {
       "type": "floor",
       "material_id": "MAT-INTERIOR-FLOOR-01",
       "design_status": "existing_provisional"
     },
-
     "INTERIOR-CEILING": {
       "type": "ceiling",
       "material_id": "MAT-INTERIOR-CEILING-01",
       "design_status": "existing_provisional"
     }
   },
-
   "materials": {
     "MAT-INTERIOR-FLOOR-01": {
       "family": "weathered_wood",
-      "base_color": null,
-      "roughness": null,
+      "base_color": [
+        0.18,
+        0.07,
+        0.025
+      ],
+      "roughness": 0.55,
       "metallic": 0.0,
       "status": "candidate"
     },
-
     "MAT-INTERIOR-CEILING-01": {
       "family": "weathered_wood",
-      "base_color": null,
-      "roughness": null,
+      "base_color": [
+        0.14,
+        0.05,
+        0.018
+      ],
+      "roughness": 0.6,
       "metallic": 0.0,
       "status": "candidate"
     },
-
     "MAT-STOVE-IRON-01": {
       "family": "blackened_iron",
-      "base_color": null,
-      "roughness": null,
-      "metallic": null,
+      "base_color": [
+        0.04,
+        0.035,
+        0.03
+      ],
+      "roughness": 0.45,
+      "metallic": 0.75,
       "status": "candidate"
     },
-
     "MAT-HEARTH-STONE-01": {
       "family": "warm_dark_stone",
-      "base_color": null,
-      "roughness": null,
+      "base_color": [
+        0.22,
+        0.19,
+        0.16
+      ],
+      "roughness": 0.8,
       "metallic": 0.0,
       "status": "candidate"
     },
-
     "MAT-FURNITURE-WOOD-01": {
       "family": "dark_warm_weathered_wood",
-      "base_color": null,
-      "roughness": null,
+      "base_color": [
+        0.24,
+        0.1,
+        0.035
+      ],
+      "roughness": 0.55,
       "metallic": 0.0,
       "status": "candidate"
     },
-
     "MAT-FABRIC-NEUTRAL-01": {
       "family": "muted_beige_camel_fabric",
-      "base_color": null,
-      "roughness": null,
+      "base_color": [
+        0.42,
+        0.31,
+        0.2
+      ],
+      "roughness": 0.85,
       "metallic": 0.0,
       "status": "candidate"
     },
-
     "MAT-RUG-01": {
       "family": "muted_warm_neutral_textile",
-      "base_color": null,
-      "roughness": null,
+      "base_color": [
+        0.28,
+        0.21,
+        0.15
+      ],
+      "roughness": 0.9,
       "metallic": 0.0,
       "status": "candidate"
     }
   },
-
   "objects": {
     "STOVE-01": {
       "type": "wood_stove",
@@ -115,7 +131,6 @@
       "design_status": "candidate",
       "continuity_status": "pending"
     },
-
     "HEARTH-01": {
       "type": "stone_hearth_base",
       "position": {
@@ -139,7 +154,6 @@
       "design_status": "candidate",
       "continuity_status": "pending"
     },
-
     "CHAIR-01": {
       "type": "rustic_armchair",
       "position": {
@@ -161,7 +175,6 @@
       "design_status": "candidate",
       "continuity_status": "pending"
     },
-
     "TABLE-01": {
       "type": "small_rectangular_table",
       "position": {
@@ -182,7 +195,6 @@
       "design_status": "candidate",
       "continuity_status": "pending"
     },
-
     "RUG-01": {
       "type": "rug",
       "position": {
@@ -204,7 +216,6 @@
       "continuity_status": "pending"
     }
   },
-
   "lighting": {
     "INTERIOR-WARM-LIGHT": {
       "role": "development_fill",
@@ -212,7 +223,6 @@
       "temporary": true,
       "design_status": "existing_provisional"
     },
-
     "LIGHT-STOVE-01": {
       "role": "primary_warm_motivated_light",
       "source_object": "STOVE-01",
@@ -220,14 +230,12 @@
       "design_status": "planned"
     }
   },
-
   "continuity_anchors": {
     "geometry": [
       "WINDOW-FRONT-01",
       "DOOR-01",
       "CHIMNEY-01"
     ],
-
     "interior": [
       "STOVE-01",
       "CHAIR-01",
@@ -235,7 +243,6 @@
       "RUG-01"
     ]
   },
-
   "continuity": {
     "world_persistent": true,
     "camera_independent": true,
@@ -245,7 +252,6 @@
     "new_objects_for_camera": false,
     "camera_change_must_not_modify_room": true
   },
-
   "ai_preservation": {
     "preserve": [
       "camera",
@@ -260,7 +266,6 @@
       "primary_colors",
       "fundamental_lighting_direction"
     ],
-
     "enhance_allowed": [
       "microtexture",
       "wood_grain_detail",
@@ -274,7 +279,6 @@
       "atmospheric_detail"
     ]
   },
-
   "validation": {
     "require_unique_ids": true,
     "require_known_materials": true,
@@ -284,7 +288,6 @@
     "protect_door_clearance": true,
     "protect_window_clearance": true
   },
-
   "continuity_gate": {
     "id": "CONTINUITY-GATE-01",
     "status": "not_tested",

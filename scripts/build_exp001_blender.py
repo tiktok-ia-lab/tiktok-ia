@@ -13,6 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 EXP_DIR = PROJECT_ROOT / "videos" / "EXP-001"
 GEOMETRY_PATH = EXP_DIR / "geometry.json"
+INTERIOR_PATH = EXP_DIR / "interior.json"
 
 OUTPUT_DIR = EXP_DIR / "blender"
 RENDER_DIR = OUTPUT_DIR / "renders"
@@ -24,7 +25,11 @@ RENDER_DIR.mkdir(parents=True, exist_ok=True)
 with open(GEOMETRY_PATH, "r", encoding="utf-8") as f:
     geometry = json.load(f)
 
+with open(INTERIOR_PATH, "r", encoding="utf-8") as f:
+    interior = json.load(f)
+
 objects = geometry["objects"]
+interior_objects = interior["objects"]
 
 
 # ============================================================
@@ -147,6 +152,210 @@ def add_box(
         obj.data.materials.append(material)
 
     return obj
+
+
+def make_principled_material_from_spec(name, spec):
+    """Build a deterministic Blender material from interior.json."""
+
+    color = spec.get("base_color")
+    roughness = spec.get("roughness")
+    metallic = spec.get("metallic")
+
+    if color is None or roughness is None or metallic is None:
+        raise ValueError(
+            f"Interior material {name} requires base_color, roughness and metallic"
+        )
+
+    mat = bpy.data.materials.new(name=name)
+    mat.use_nodes = True
+    mat.diffuse_color = (*color, 1.0)
+
+    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    bsdf.inputs["Base Color"].default_value = (*color, 1.0)
+    bsdf.inputs["Roughness"].default_value = roughness
+    bsdf.inputs["Metallic"].default_value = metallic
+
+    return mat
+
+
+def canonical_rotated_offset(cx, cy, ox, oy, rotation_z_deg):
+    """Return a Blender-space XY point from a canonical local offset."""
+
+    angle = math.radians(rotation_z_deg)
+    xr = ox * math.cos(angle) - oy * math.sin(angle)
+    yr = ox * math.sin(angle) + oy * math.cos(angle)
+
+    return (bx(cx + xr), cy + yr)
+
+
+def add_interior_box_component(
+    name,
+    center_x,
+    center_y,
+    base_z,
+    local_x,
+    local_y,
+    local_z,
+    dimensions,
+    rotation_z_deg,
+    material,
+):
+    x, y = canonical_rotated_offset(
+        center_x,
+        center_y,
+        local_x,
+        local_y,
+        rotation_z_deg,
+    )
+
+    obj = add_box(
+        name,
+        (x, y, base_z + local_z),
+        dimensions,
+        material,
+    )
+
+    # Canonical X is mirrored in Blender, so canonical Z rotation changes sign.
+    obj.rotation_euler[2] = math.radians(-rotation_z_deg)
+
+    return obj
+
+
+
+def build_interior_candidate_objects(interior_objects, materials, floor_top_z):
+    """Build only the minimal V0.2 continuity-test furniture set."""
+
+    # HEARTH-01 ------------------------------------------------
+    hearth = interior_objects["HEARTH-01"]
+    hp = hearth["position"]
+    hd = hearth["dimensions"]
+
+    add_box(
+        "HEARTH-01",
+        (
+            bx(hp["x"]),
+            hp["y"],
+            floor_top_z + hd["height"] / 2,
+        ),
+        (hd["width"], hd["depth"], hd["height"]),
+        materials[hearth["materials"][0]],
+    )
+
+    # STOVE-01 -------------------------------------------------
+    stove = interior_objects["STOVE-01"]
+    sp = stove["position"]
+    sd = stove["dimensions"]
+    stove_base_z = floor_top_z + hd["height"]
+
+    add_box(
+        "STOVE-01",
+        (
+            bx(sp["x"]),
+            sp["y"],
+            stove_base_z + sd["height"] / 2,
+        ),
+        (sd["width"], sd["depth"], sd["height"]),
+        materials[stove["materials"][0]],
+    )
+
+    # TABLE-01 -------------------------------------------------
+    table = interior_objects["TABLE-01"]
+    tp = table["position"]
+    td = table["dimensions"]
+    trot = table["rotation_z_deg"]
+    table_mat = materials[table["materials"][0]]
+
+    top_thickness = 0.08
+    leg_size = 0.08
+    leg_height = td["height"] - top_thickness
+
+    add_interior_box_component(
+        "TABLE-01_TOP", tp["x"], tp["y"], floor_top_z,
+        0.0, 0.0, td["height"] - top_thickness / 2,
+        (td["width"], td["depth"], top_thickness),
+        trot, table_mat,
+    )
+
+    for index, (ox, oy) in enumerate((
+        (-td["width"] / 2 + 0.10, -td["depth"] / 2 + 0.10),
+        ( td["width"] / 2 - 0.10, -td["depth"] / 2 + 0.10),
+        (-td["width"] / 2 + 0.10,  td["depth"] / 2 - 0.10),
+        ( td["width"] / 2 - 0.10,  td["depth"] / 2 - 0.10),
+    ), start=1):
+        add_interior_box_component(
+            f"TABLE-01_LEG_{index}", tp["x"], tp["y"], floor_top_z,
+            ox, oy, leg_height / 2,
+            (leg_size, leg_size, leg_height),
+            trot, table_mat,
+        )
+
+    # CHAIR-01 -------------------------------------------------
+    chair = interior_objects["CHAIR-01"]
+    cp = chair["position"]
+    cd = chair["dimensions"]
+    crot = chair["rotation_z_deg"]
+    wood_mat = materials[chair["materials"][0]]
+    fabric_mat = materials[chair["materials"][1]]
+
+    seat_w = cd["width"] * 0.78
+    seat_d = cd["depth"] * 0.70
+    seat_h = 0.12
+    seat_z = 0.46
+    back_h = cd["height"] - seat_z
+
+    add_interior_box_component(
+        "CHAIR-01_SEAT", cp["x"], cp["y"], floor_top_z,
+        0.0, 0.0, seat_z,
+        (seat_w, seat_d, seat_h),
+        crot, fabric_mat,
+    )
+
+    add_interior_box_component(
+        "CHAIR-01_BACK", cp["x"], cp["y"], floor_top_z,
+        0.0, seat_d / 2 - 0.05, seat_z + back_h / 2 - 0.03,
+        (seat_w, 0.10, back_h),
+        crot, fabric_mat,
+    )
+
+    arm_z = seat_z + 0.18
+    for index, ox in enumerate((-cd["width"] / 2 + 0.07, cd["width"] / 2 - 0.07), start=1):
+        add_interior_box_component(
+            f"CHAIR-01_ARM_{index}", cp["x"], cp["y"], floor_top_z,
+            ox, 0.0, arm_z,
+            (0.10, seat_d, 0.10),
+            crot, wood_mat,
+        )
+
+    leg_height = seat_z - seat_h / 2
+    for index, (ox, oy) in enumerate((
+        (-seat_w / 2 + 0.07, -seat_d / 2 + 0.07),
+        ( seat_w / 2 - 0.07, -seat_d / 2 + 0.07),
+        (-seat_w / 2 + 0.07,  seat_d / 2 - 0.07),
+        ( seat_w / 2 - 0.07,  seat_d / 2 - 0.07),
+    ), start=1):
+        add_interior_box_component(
+            f"CHAIR-01_LEG_{index}", cp["x"], cp["y"], floor_top_z,
+            ox, oy, leg_height / 2,
+            (0.08, 0.08, leg_height),
+            crot, wood_mat,
+        )
+
+    # RUG-01 ---------------------------------------------------
+    rug = interior_objects["RUG-01"]
+    rp = rug["position"]
+    rd = rug["dimensions"]
+
+    rug_obj = add_box(
+        "RUG-01",
+        (
+            bx(rp["x"]),
+            rp["y"],
+            floor_top_z + rd["height"] / 2,
+        ),
+        (rd["width"], rd["depth"], rd["height"]),
+        materials[rug["materials"][0]],
+    )
+    rug_obj.rotation_euler[2] = math.radians(-rug["rotation_z_deg"])
 
 
 def cut_front_opening(
@@ -1281,6 +1490,19 @@ mat_door = make_material(
 
 
 # ============================================================
+# INTERIOR MATERIALS — SOURCE: interior.json
+# ============================================================
+
+interior_materials = {
+    material_id: make_principled_material_from_spec(
+        material_id,
+        material_spec,
+    )
+    for material_id, material_spec in interior["materials"].items()
+}
+
+
+# ============================================================
 # GROUND
 # ============================================================
 
@@ -1572,7 +1794,7 @@ add_box(
         interior_depth,
         0.10,
     ),
-    mat_porch,
+    interior_materials["MAT-INTERIOR-FLOOR-01"],
 )
 
 
@@ -1592,7 +1814,20 @@ add_box(
         interior_depth,
         0.12,
     ),
-    mat_cabin,
+    interior_materials["MAT-INTERIOR-CEILING-01"],
+)
+
+
+# ------------------------------------------------------------
+# MINIMAL INTERIOR OBJECT SET — CONTINUITY V0.2
+# ------------------------------------------------------------
+
+interior_floor_top_z = wall_base_z + 0.10
+
+build_interior_candidate_objects(
+    interior_objects,
+    interior_materials,
+    interior_floor_top_z,
 )
 
 
@@ -2478,19 +2713,19 @@ for i in range(
 # ============================================================
 
 tree_specs = [
-    ("TREE_01", -5.0, -1.5, 5.8),
+    ("TREE_01", -5.6, -1.5, 5.8),
     ("TREE_02", -5.8, -3.2, 7.0),
-    ("TREE_03", -4.8, -5.0, 6.3),
-    ("TREE_04", -3.8, -6.2, 7.5),
+    ("TREE_03", -5.8, -5.0, 6.3),
+    ("TREE_04", -3.8, -8.0, 7.5),
 
-    ("TREE_05", -2.0, -6.5, 6.8),
-    ("TREE_06",  0.0, -6.8, 7.8),
-    ("TREE_07",  2.0, -6.5, 6.6),
-    ("TREE_08",  3.8, -6.0, 7.4),
+    ("TREE_05", -2.0, -7.7, 6.8),
+    ("TREE_06",  0.0, -8.1, 7.8),
+    ("TREE_07",  2.0, -7.6, 6.6),
+    ("TREE_08",  3.8, -7.9, 7.4),
 
-    ("TREE_09",  4.9, -4.8, 6.5),
-    ("TREE_10",  5.8, -3.0, 7.2),
-    ("TREE_11",  5.0, -1.2, 5.9),
+    ("TREE_09",  5.9, -4.8, 6.5),
+    ("TREE_10",  6.2, -3.0, 7.2),
+    ("TREE_11",  5.6, -1.2, 5.9),
 
     ("TREE_12", -6.2,  0.8, 6.6),
     ("TREE_13",  6.3,  0.6, 6.9),
@@ -2645,7 +2880,6 @@ render_camera(
     cam2,
     "CAM-002_interior.png"
 )
-
 window_panel.hide_render = False
 
 scene.camera = cam1
