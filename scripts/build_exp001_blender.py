@@ -149,6 +149,66 @@ def add_box(
     return obj
 
 
+def cut_front_opening(
+    target,
+    name,
+    canonical_x_min,
+    canonical_x_max,
+    y,
+    z_min,
+    z_max,
+):
+    """Cut a real opening through the cabin front wall."""
+
+    blender_x_a = bx(canonical_x_min)
+    blender_x_b = bx(canonical_x_max)
+
+    x_min = min(blender_x_a, blender_x_b)
+    x_max = max(blender_x_a, blender_x_b)
+
+    width = x_max - x_min
+    height = z_max - z_min
+
+    cutter = add_box(
+        name,
+        (
+            (x_min + x_max) / 2,
+            y - 0.02,
+            (z_min + z_max) / 2,
+        ),
+        (
+            width,
+            0.40,
+            height,
+        ),
+        material=None,
+    )
+
+    modifier = target.modifiers.new(
+        name=f"{name}_BOOLEAN",
+        type="BOOLEAN",
+    )
+
+    modifier.operation = "DIFFERENCE"
+    modifier.solver = "EXACT"
+    modifier.object = cutter
+
+    bpy.context.view_layer.objects.active = target
+    target.select_set(True)
+
+    bpy.ops.object.modifier_apply(
+        modifier=modifier.name
+    )
+
+    target.select_set(False)
+
+    bpy.data.objects.remove(
+        cutter,
+        do_unlink=True
+    )
+
+
+
 def add_cylinder(
     name,
     location,
@@ -1284,21 +1344,197 @@ front_y = (
 )
 
 
+# CABIN-01 is a real hollow shell, not a solid blocking cube.
+# Exterior dimensions remain identical to geometry.json.
+
+wall_thickness = 0.14
+half_width = cabin_width / 2
+
+back_y = front_y - cabin_depth
+
+
+def add_front_wall_segment(
+    name,
+    canonical_x_min,
+    canonical_x_max,
+    z_min,
+    z_max,
+):
+    x_a = bx(canonical_x_min)
+    x_b = bx(canonical_x_max)
+
+    x_min = min(x_a, x_b)
+    x_max = max(x_a, x_b)
+
+    add_box(
+        name,
+        (
+            (x_min + x_max) / 2,
+            front_y - wall_thickness / 2,
+            (z_min + z_max) / 2,
+        ),
+        (
+            x_max - x_min,
+            wall_thickness,
+            z_max - z_min,
+        ),
+        mat_cabin,
+    )
+
+
+# ------------------------------------------------------------
+# SIDE WALLS
+# ------------------------------------------------------------
+
 add_box(
-    "CABIN-01",
+    "CABIN-WALL-LEFT",
+    (
+        cabin_x - half_width + wall_thickness / 2,
+        cabin_y,
+        wall_base_z + wall_height / 2,
+    ),
+    (
+        wall_thickness,
+        cabin_depth,
+        wall_height,
+    ),
+    mat_cabin,
+)
+
+add_box(
+    "CABIN-WALL-RIGHT",
+    (
+        cabin_x + half_width - wall_thickness / 2,
+        cabin_y,
+        wall_base_z + wall_height / 2,
+    ),
+    (
+        wall_thickness,
+        cabin_depth,
+        wall_height,
+    ),
+    mat_cabin,
+)
+
+
+# ------------------------------------------------------------
+# REAR WALL
+# ------------------------------------------------------------
+
+add_box(
+    "CABIN-WALL-REAR",
     (
         cabin_x,
-        cabin_y,
-        wall_base_z
-        + wall_height / 2
+        back_y + wall_thickness / 2,
+        wall_base_z + wall_height / 2,
     ),
     (
         cabin_width,
-        cabin_depth,
-        wall_height
+        wall_thickness,
+        wall_height,
     ),
-    mat_cabin
+    mat_cabin,
 )
+
+
+# Door geometry is needed here to build the physical opening
+# before the later DOOR rendering block.
+
+door = objects["DOOR-01"]
+door_position = door["position"]
+door_w = door["dimensions"]["width"]
+door_h = door["dimensions"]["height"]
+
+
+# ------------------------------------------------------------
+# FRONT WALL
+#
+# Canonical facade:
+#
+# cabin:  x = -3.0 .. 3.0
+# door:   x = -0.5 .. 0.5
+# window: x = 0.975 .. 2.625
+#
+# Both openings are physically real.
+# ------------------------------------------------------------
+
+door_x_min = (
+    door_position["x"]
+    - door_w / 2
+)
+
+door_x_max = (
+    door_position["x"]
+    + door_w / 2
+)
+
+door_z_min = door_position["z"]
+door_z_max = door_position["z"] + door_h
+
+window_opening = objects[
+    "WINDOW-FRONT-01"
+]["opening"]
+
+window_x_min = window_opening["x_min"]
+window_x_max = window_opening["x_max"]
+window_z_min = window_opening["z_min"]
+window_z_max = window_opening["z_max"]
+
+
+# Full-height wall left of door.
+add_front_wall_segment(
+    "CABIN-FRONT-LEFT",
+    -half_width,
+    door_x_min,
+    wall_base_z,
+    wall_top_z,
+)
+
+# Wall above door.
+add_front_wall_segment(
+    "CABIN-FRONT-ABOVE-DOOR",
+    door_x_min,
+    door_x_max,
+    door_z_max,
+    wall_top_z,
+)
+
+# Wall between door and front window.
+add_front_wall_segment(
+    "CABIN-FRONT-MIDDLE",
+    door_x_max,
+    window_x_min,
+    wall_base_z,
+    wall_top_z,
+)
+
+# Wall below window.
+add_front_wall_segment(
+    "CABIN-FRONT-BELOW-WINDOW",
+    window_x_min,
+    window_x_max,
+    wall_base_z,
+    window_z_min,
+)
+
+# Wall above window.
+add_front_wall_segment(
+    "CABIN-FRONT-ABOVE-WINDOW",
+    window_x_min,
+    window_x_max,
+    window_z_max,
+    wall_top_z,
+)
+
+# Remaining facade right of window.
+add_front_wall_segment(
+    "CABIN-FRONT-RIGHT",
+    window_x_max,
+    half_width,
+    wall_base_z,
+    wall_top_z,
+)
+
 
 
 # ============================================================
@@ -1454,7 +1690,7 @@ window_center_z = (
 )
 
 
-add_box(
+window_panel = add_box(
     "WINDOW-FRONT-01",
     point_xyz(
         wx,
@@ -2223,7 +2459,7 @@ light_obj.rotation_euler = (
 
 
 # ============================================================
-# RENDER CAM-001
+# RENDER CAM-001 + CAM-002
 # ============================================================
 
 render_camera(
@@ -2231,6 +2467,19 @@ render_camera(
     cam1,
     "CAM-001_exterior.png"
 )
+
+# CAM-002 looks through the same physical front window.
+# The cabin is now a hollow shell; only the provisional
+# opaque window pane is hidden for the interior view.
+window_panel.hide_render = True
+
+render_camera(
+    scene,
+    cam2,
+    "CAM-002_interior.png"
+)
+
+window_panel.hide_render = False
 
 scene.camera = cam1
 
