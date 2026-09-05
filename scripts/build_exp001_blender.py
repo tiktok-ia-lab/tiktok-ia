@@ -625,6 +625,329 @@ def add_front_gable(
     return obj
 
 
+# ------------------------------------------------------------
+# GT-v2G1 — CANONICAL PHYSICAL FRONT-GABLE PLANKS
+#
+# Same global horizontal plank grid as the rectangular facade.
+#
+# Rules:
+# - grid remains anchored at wall_base_z
+# - gable does NOT restart plank spacing at wall_top_z
+# - boards are clipped by both roof slopes
+# - upper window interrupts the boards
+# - gaps are real; no painted/artificial joint strips
+# ------------------------------------------------------------
+
+def add_front_gable_planks_exterior_canonical(
+    name_prefix,
+    base_z,
+    ridge_z,
+    opening_x_min,
+    opening_x_max,
+    opening_z_min,
+    opening_z_max,
+    pitch=0.24,
+    gap=0.010,
+):
+    board_height = pitch - gap
+
+    # Align exactly with the rectangular exterior cladding.
+    surface_y = (
+        front_y + 0.018
+    )
+
+    half_w = cabin_width / 2
+    gable_height = ridge_z - base_z
+
+    def half_width_at_z(z):
+        if z >= ridge_z:
+            return 0.0
+
+        return (
+            half_w
+            * (ridge_z - z)
+            / gable_height
+        )
+
+    def add_panel(
+        name,
+        left_za,
+        right_za,
+        left_zb,
+        right_zb,
+        za,
+        zb,
+    ):
+        mesh = bpy.data.meshes.new(
+            f"{name}_MESH"
+        )
+
+        verts = [
+            (
+                bx(left_za),
+                surface_y,
+                za,
+            ),
+            (
+                bx(right_za),
+                surface_y,
+                za,
+            ),
+            (
+                bx(right_zb),
+                surface_y,
+                zb,
+            ),
+            (
+                bx(left_zb),
+                surface_y,
+                zb,
+            ),
+        ]
+
+        mesh.from_pydata(
+            verts,
+            [],
+            [(0, 1, 2, 3)],
+        )
+
+        mesh.update()
+
+        obj = bpy.data.objects.new(
+            name,
+            mesh,
+        )
+
+        bpy.context.collection.objects.link(
+            obj
+        )
+
+        obj.data.materials.append(
+            mat_gable
+        )
+
+        return obj
+
+    # --------------------------------------------------------
+    # Global plank grid.
+    #
+    # IMPORTANT:
+    # starts from wall_base_z, not from gable base_z.
+    # Therefore the facade/gable boundary cannot restart
+    # the physical board rhythm.
+    # --------------------------------------------------------
+
+    grid_index = math.floor(
+        (base_z - wall_base_z)
+        / pitch
+    )
+
+    current_z = (
+        wall_base_z
+        + grid_index * pitch
+    )
+
+    row_index = grid_index + 1
+
+    while current_z < ridge_z - 0.001:
+
+        raw_board_min = current_z
+        raw_board_max = (
+            current_z + board_height
+        )
+
+        za = max(
+            raw_board_min,
+            base_z,
+        )
+
+        zb = min(
+            raw_board_max,
+            ridge_z,
+        )
+
+        if zb - za > 0.002:
+
+            # Exact splits where the upper window starts/ends.
+            z_cuts = {
+                za,
+                zb,
+            }
+
+            for boundary in (
+                opening_z_min,
+                opening_z_max,
+            ):
+                if za < boundary < zb:
+                    z_cuts.add(boundary)
+
+            z_cuts = sorted(z_cuts)
+
+            slice_index = 1
+
+            for slice_za, slice_zb in zip(
+                z_cuts[:-1],
+                z_cuts[1:],
+            ):
+                if (
+                    slice_zb - slice_za
+                    <= 0.002
+                ):
+                    continue
+
+                z_mid = (
+                    slice_za + slice_zb
+                ) / 2
+
+                half_mid = half_width_at_z(
+                    z_mid
+                )
+
+                gable_min_mid = -half_mid
+                gable_max_mid = half_mid
+
+                intervals = [
+                    (
+                        gable_min_mid,
+                        gable_max_mid,
+                    )
+                ]
+
+                # Upper window opening.
+                if (
+                    opening_z_min
+                    < z_mid
+                    < opening_z_max
+                ):
+                    new_intervals = []
+
+                    for seg_min, seg_max in intervals:
+
+                        if (
+                            opening_x_max <= seg_min
+                            or opening_x_min >= seg_max
+                        ):
+                            new_intervals.append(
+                                (
+                                    seg_min,
+                                    seg_max,
+                                )
+                            )
+                            continue
+
+                        if opening_x_min > seg_min:
+                            new_intervals.append(
+                                (
+                                    seg_min,
+                                    min(
+                                        opening_x_min,
+                                        seg_max,
+                                    ),
+                                )
+                            )
+
+                        if opening_x_max < seg_max:
+                            new_intervals.append(
+                                (
+                                    max(
+                                        opening_x_max,
+                                        seg_min,
+                                    ),
+                                    seg_max,
+                                )
+                            )
+
+                    intervals = new_intervals
+
+                half_za = half_width_at_z(
+                    slice_za
+                )
+
+                half_zb = half_width_at_z(
+                    slice_zb
+                )
+
+                gable_min_za = -half_za
+                gable_max_za = half_za
+
+                gable_min_zb = -half_zb
+                gable_max_zb = half_zb
+
+                piece_index = 1
+
+                for seg_min, seg_max in intervals:
+
+                    if (
+                        seg_max - seg_min
+                        <= 0.01
+                    ):
+                        continue
+
+                    # Determine whether either side follows
+                    # a roof slope or a fixed window edge.
+                    left_is_slope = (
+                        abs(
+                            seg_min
+                            - gable_min_mid
+                        )
+                        < 0.001
+                    )
+
+                    right_is_slope = (
+                        abs(
+                            seg_max
+                            - gable_max_mid
+                        )
+                        < 0.001
+                    )
+
+                    left_za = (
+                        gable_min_za
+                        if left_is_slope
+                        else seg_min
+                    )
+
+                    left_zb = (
+                        gable_min_zb
+                        if left_is_slope
+                        else seg_min
+                    )
+
+                    right_za = (
+                        gable_max_za
+                        if right_is_slope
+                        else seg_max
+                    )
+
+                    right_zb = (
+                        gable_max_zb
+                        if right_is_slope
+                        else seg_max
+                    )
+
+                    add_panel(
+                        (
+                            f"{name_prefix}"
+                            f"_ROW_{row_index:02d}"
+                            f"_SLICE_{slice_index:02d}"
+                            f"_PIECE_{piece_index:02d}"
+                        ),
+                        left_za,
+                        right_za,
+                        left_zb,
+                        right_zb,
+                        slice_za,
+                        slice_zb,
+                    )
+
+                    piece_index += 1
+
+                slice_index += 1
+
+        current_z += pitch
+        row_index += 1
+
+
 # ============================================================
 # ROOF
 # ============================================================
@@ -3019,7 +3342,11 @@ roof_ridge_z = (
 add_front_gable(
     "FRONT-GABLE-01",
     center_x=cabin_x,
-    front_y=front_y + 0.015,
+    # GT-v2G1A — structural gable backing.
+    # Keep the backing at the canonical facade plane.
+    # Exterior plank faces sit 18 mm forward, so their
+    # real 10 mm gaps reveal a physically recessed surface.
+    front_y=front_y,
     width=cabin_width,
     base_z=wall_top_z,
     ridge_z=roof_ridge_z,
@@ -3483,6 +3810,35 @@ uwh = (
 
 upper_center_z = (
     uwz + uwh / 2
+)
+
+
+# ------------------------------------------------------------
+# GT-v2G1 — APPLY CANONICAL FRONT-GABLE PLANKS
+# ------------------------------------------------------------
+
+upper_window_x_min = (
+    uwx - uww / 2
+)
+
+upper_window_x_max = (
+    uwx + uww / 2
+)
+
+upper_window_z_min = uwz
+
+upper_window_z_max = (
+    uwz + uwh
+)
+
+add_front_gable_planks_exterior_canonical(
+    "FRONT-GABLE-PLANK-EXT",
+    base_z=wall_top_z,
+    ridge_z=roof_ridge_z,
+    opening_x_min=upper_window_x_min,
+    opening_x_max=upper_window_x_max,
+    opening_z_min=upper_window_z_min,
+    opening_z_max=upper_window_z_max,
 )
 
 
