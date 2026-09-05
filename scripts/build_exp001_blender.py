@@ -82,7 +82,19 @@ def make_material(name, color):
 
 
 def make_wood_material(name, dark, light):
-    """Procedural wet rustic wood material."""
+    """
+    Canonical rustic wood material.
+
+    Ground Truth V2:
+    - wood identity
+    - directional grain
+    - restrained tonal variation
+    - matte aged response
+
+    IMPORTANT:
+    Board orientation and board joints are defined ONLY by geometry.
+    This shader must NOT create periodic plank seams.
+    """
 
     mat = bpy.data.materials.new(name=name)
     mat.use_nodes = True
@@ -92,17 +104,95 @@ def make_wood_material(name, dark, light):
 
     bsdf = nodes.get("Principled BSDF")
 
-    noise = nodes.new("ShaderNodeTexNoise")
-    noise.inputs["Scale"].default_value = 5.0
-    noise.inputs["Detail"].default_value = 3.0
-    noise.inputs["Roughness"].default_value = 0.65
+    # --------------------------------------------------------
+    # Coordinates
+    # --------------------------------------------------------
 
-    mapping = nodes.new("ShaderNodeMapping")
     texcoord = nodes.new("ShaderNodeTexCoord")
+    mapping = nodes.new("ShaderNodeMapping")
 
+    links.new(
+        texcoord.outputs["Generated"],
+        mapping.inputs["Vector"]
+    )
+
+    # --------------------------------------------------------
+    # Directional wood grain only
+    # --------------------------------------------------------
+
+    grain = nodes.new("ShaderNodeTexNoise")
+    grain.inputs["Scale"].default_value = 7.0
+    grain.inputs["Detail"].default_value = 5.0
+    grain.inputs["Roughness"].default_value = 0.68
+
+    mapping.inputs["Scale"].default_value = (
+        1.0,
+        4.0,
+        0.32,
+    )
+
+    links.new(
+        mapping.outputs["Vector"],
+        grain.inputs["Vector"]
+    )
+
+    wood_ramp = nodes.new("ShaderNodeValToRGB")
+    wood_ramp.color_ramp.elements[0].color = (*dark, 1.0)
+    wood_ramp.color_ramp.elements[1].color = (*light, 1.0)
+
+    links.new(
+        grain.outputs["Fac"],
+        wood_ramp.inputs["Fac"]
+    )
+
+    links.new(
+        wood_ramp.outputs["Color"],
+        bsdf.inputs["Base Color"]
+    )
+
+    bsdf.inputs["Roughness"].default_value = 0.52
+
+    return mat
+
+
+def make_door_wood_material(name):
+    """
+    Canonical EXP-001 door material.
+
+    Vertical aged timber with muted terracotta / red-brown identity.
+    Blender defines the material identity; OpenAI may only refine it.
+    """
+
+    mat = bpy.data.materials.new(name=name)
+    mat.use_nodes = True
+
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+
+    bsdf = nodes.get("Principled BSDF")
+
+    texcoord = nodes.new("ShaderNodeTexCoord")
+    mapping = nodes.new("ShaderNodeMapping")
+    noise = nodes.new("ShaderNodeTexNoise")
     ramp = nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.elements[0].color = (*dark, 1.0)
-    ramp.color_ramp.elements[1].color = (*light, 1.0)
+
+    # Directional vertical grain.
+    mapping.inputs["Scale"].default_value = (
+        4.5,
+        5.0,
+        0.32,
+    )
+
+    noise.inputs["Scale"].default_value = 5.0
+    noise.inputs["Detail"].default_value = 4.0
+    noise.inputs["Roughness"].default_value = 0.62
+
+    ramp.color_ramp.elements[0].color = (
+        0.16, 0.025, 0.012, 1.0
+    )
+    ramp.color_ramp.elements[1].color = (
+        0.50, 0.105, 0.040, 1.0
+    )
 
     links.new(
         texcoord.outputs["Generated"],
@@ -121,7 +211,7 @@ def make_wood_material(name, dark, light):
         bsdf.inputs["Base Color"]
     )
 
-    bsdf.inputs["Roughness"].default_value = 0.32
+    bsdf.inputs["Roughness"].default_value = 0.48
 
     return mat
 
@@ -1230,10 +1320,16 @@ def add_conifer(name, x, y, height, material_trunk, material_needles):
         material=material_trunk
     )
 
+    # GT-v2A:
+    # More explicitly conifer-like silhouette.
+    # Five overlapping crown layers reduce the chance that a partially
+    # occluded tree is interpreted as the roof of another building.
     crown_specs = [
-        (0.38, 0.42, 0.30),
-        (0.55, 0.34, 0.27),
-        (0.70, 0.25, 0.23),
+        (0.34, 0.34, 0.26),
+        (0.46, 0.31, 0.25),
+        (0.58, 0.27, 0.23),
+        (0.70, 0.22, 0.21),
+        (0.82, 0.15, 0.19),
     ]
 
     for i, (z_ratio, radius_ratio, depth_ratio) in enumerate(
@@ -1241,7 +1337,7 @@ def add_conifer(name, x, y, height, material_trunk, material_needles):
         start=1
     ):
         bpy.ops.mesh.primitive_cone_add(
-            vertices=8,
+            vertices=12,
             radius1=height * radius_ratio,
             radius2=0.0,
             depth=height * depth_ratio,
@@ -1420,6 +1516,13 @@ mat_gable = make_wood_material(
     light=(0.30, 0.11, 0.030)
 )
 
+# GT-v2B — physical separation between exterior boards.
+mat_plank_joint = make_material(
+    "MAT_EXTERIOR_PLANK_JOINT",
+    (0.028, 0.012, 0.006)
+)
+
+
 mat_roof = make_material(
     "MAT_ROOF",
     (0.10, 0.07, 0.05)
@@ -1483,9 +1586,20 @@ mat_ground = make_material(
     (0.06, 0.09, 0.05)
 )
 
-mat_door = make_material(
-    "MAT_DOOR",
-    (0.45, 0.08, 0.04)
+mat_door = make_door_wood_material(
+    "MAT_DOOR"
+)
+
+# Physical grooves between the vertical door boards.
+mat_door_joint = make_material(
+    "MAT_DOOR_JOINT",
+    (0.035, 0.010, 0.006)
+)
+
+# Canonical door hardware. Same physical axis exterior/interior.
+mat_door_hardware = make_material(
+    "MAT_DOOR_HARDWARE",
+    (0.24, 0.14, 0.045)
 )
 
 
@@ -1605,6 +1719,626 @@ def add_front_wall_segment(
 
 
 # ------------------------------------------------------------
+# GT-v2B — EXTERIOR FRONT PLANK JOINTS
+#
+# Physical visual constraints for the generative stage.
+# These joints define horizontal board orientation explicitly
+# in geometry rather than asking the image model to infer it.
+#
+# They are intentionally shallow and do not modify the
+# structural wall or any opening.
+# ------------------------------------------------------------
+
+def add_front_plank_joints(
+    name_prefix,
+    canonical_x_min,
+    canonical_x_max,
+    z_min,
+    z_max,
+    spacing=0.24,
+):
+    x_a = bx(canonical_x_min)
+    x_b = bx(canonical_x_max)
+
+    x_min = min(x_a, x_b)
+    x_max = max(x_a, x_b)
+
+    joint_width = 0.012
+    joint_depth = 0.010
+
+    z = z_min + spacing
+
+    index = 1
+
+    while z < z_max - 0.04:
+
+        add_box(
+            f"{name_prefix}_{index:02d}",
+            (
+                (x_min + x_max) / 2,
+                front_y + joint_depth / 2,
+                z,
+            ),
+            (
+                x_max - x_min,
+                joint_depth,
+                joint_width,
+            ),
+            mat_plank_joint,
+        )
+
+        z += spacing
+        index += 1
+
+
+# ------------------------------------------------------------
+# GT-v2C1b — INTERIOR FRONT PLANK JOINTS
+#
+# Same canonical board spacing and Z coordinates as exterior.
+# The two faces belong to the same physical wall system.
+# ------------------------------------------------------------
+
+def add_front_plank_joints_interior(
+    name_prefix,
+    canonical_x_min,
+    canonical_x_max,
+    z_min,
+    z_max,
+    spacing=0.24,
+):
+    x_a = bx(canonical_x_min)
+    x_b = bx(canonical_x_max)
+
+    x_min = min(x_a, x_b)
+    x_max = max(x_a, x_b)
+
+    joint_width = 0.012
+    joint_depth = 0.010
+
+    z = z_min + spacing
+    index = 1
+
+    while z < z_max - 0.04:
+
+        add_box(
+            f"{name_prefix}_{index:02d}",
+            (
+                (x_min + x_max) / 2,
+
+                # Inner face of the SAME physical front wall.
+                front_y
+                - wall_thickness
+                - joint_depth / 2,
+
+                z,
+            ),
+            (
+                x_max - x_min,
+                joint_depth,
+                joint_width,
+            ),
+            mat_plank_joint,
+        )
+
+        z += spacing
+        index += 1
+
+
+# ------------------------------------------------------------
+# GT-v2C1c-1 — REAR WALL PLANK JOINTS
+#
+# Same horizontal board spacing on exterior and interior faces
+# of the same physical rear wall.
+# ------------------------------------------------------------
+
+def add_rear_plank_joints(
+    name_prefix,
+    z_min,
+    z_max,
+    spacing=0.24,
+):
+    joint_height = 0.012
+    joint_depth = 0.010
+
+    z = z_min + spacing
+    index = 1
+
+    while z < z_max - 0.04:
+
+        # Exterior face of rear wall.
+        add_box(
+            f"{name_prefix}_EXT_{index:02d}",
+            (
+                cabin_x,
+                back_y - joint_depth / 2,
+                z,
+            ),
+            (
+                cabin_width,
+                joint_depth,
+                joint_height,
+            ),
+            mat_plank_joint,
+        )
+
+        # Interior face of rear wall.
+        add_box(
+            f"{name_prefix}_INT_{index:02d}",
+            (
+                cabin_x,
+                back_y + wall_thickness + joint_depth / 2,
+                z,
+            ),
+            (
+                cabin_width,
+                joint_depth,
+                joint_height,
+            ),
+            mat_plank_joint,
+        )
+
+        z += spacing
+        index += 1
+
+
+# ------------------------------------------------------------
+# GT-v2C1c-2 — SIDE WALL PLANK JOINTS
+#
+# Same canonical horizontal board spacing on both faces
+# of the physical left/right cabin walls.
+# ------------------------------------------------------------
+
+def add_side_plank_joints(
+    name_prefix,
+    wall_x,
+    exterior_sign,
+    z_min,
+    z_max,
+    spacing=0.24,
+):
+    # GT-v2C1c-2 refinement:
+    # nearly coplanar seam marker, avoiding double-edge appearance.
+    joint_height = 0.006
+    joint_depth = 0.001
+
+    z = z_min + spacing
+    index = 1
+
+    while z < z_max - 0.04:
+
+        # Exterior face.
+        add_box(
+            f"{name_prefix}_EXT_{index:02d}",
+            (
+                wall_x + exterior_sign * joint_depth / 2,
+                cabin_y,
+                z,
+            ),
+            (
+                joint_depth,
+                cabin_depth,
+                joint_height,
+            ),
+            mat_plank_joint,
+        )
+
+        # Interior face.
+        add_box(
+            f"{name_prefix}_INT_{index:02d}",
+            (
+                wall_x - exterior_sign * (
+                    wall_thickness + joint_depth / 2
+                ),
+                cabin_y,
+                z,
+            ),
+            (
+                joint_depth,
+                cabin_depth,
+                joint_height,
+            ),
+            mat_plank_joint,
+        )
+
+        z += spacing
+        index += 1
+
+
+# ------------------------------------------------------------
+# GT-v2D — PHYSICAL REAR-WALL PLANKS / PROTOTYPE
+#
+# Real boards instead of painted/superimposed joint strips.
+#
+# The gap between two boards is now an actual geometric gap,
+# so there is only one physical seam and no double-line effect.
+#
+# Prototype applies ONLY to the INTERIOR face of the rear wall.
+# ------------------------------------------------------------
+
+def add_rear_wall_planks_interior(
+    name_prefix,
+    z_min,
+    z_max,
+    pitch=0.24,
+    gap=0.010,
+):
+    board_depth = 0.018
+    board_height = pitch - gap
+
+    # Interior physical face of rear structural wall.
+    surface_y = back_y + wall_thickness
+
+    current_z = z_min
+    index = 1
+
+    while current_z < z_max - 0.001:
+
+        available = z_max - current_z
+        height = min(board_height, available)
+
+        if height <= 0.01:
+            break
+
+        add_box(
+            f"{name_prefix}_{index:02d}",
+            (
+                cabin_x,
+
+                # Boards project slightly into the room.
+                surface_y + board_depth / 2,
+
+                current_z + height / 2,
+            ),
+            (
+                cabin_width - 2 * wall_thickness,
+                board_depth,
+                height,
+            ),
+            mat_cabin,
+        )
+
+        current_z += pitch
+        index += 1
+
+
+# ------------------------------------------------------------
+# GT-v2D2A — PHYSICAL LEFT-WALL PLANKS / PROTOTYPE
+#
+# Real horizontal boards on the INTERIOR face of one side wall.
+# Same pitch/gap as validated rear wall.
+# ------------------------------------------------------------
+
+def add_side_wall_planks_interior(
+    name_prefix,
+    wall_x,
+    interior_sign,
+    z_min,
+    z_max,
+    pitch=0.24,
+    gap=0.010,
+):
+    board_depth = 0.018
+    board_height = pitch - gap
+
+    # Interior physical face of the structural side wall.
+    surface_x = (
+        wall_x
+        + interior_sign * wall_thickness / 2
+    )
+
+    current_z = z_min
+    index = 1
+
+    while current_z < z_max - 0.001:
+
+        available = z_max - current_z
+        height = min(board_height, available)
+
+        if height <= 0.01:
+            break
+
+        add_box(
+            f"{name_prefix}_{index:02d}",
+            (
+                surface_x
+                + interior_sign * board_depth / 2,
+                cabin_y,
+                current_z + height / 2,
+            ),
+            (
+                board_depth,
+                cabin_depth - 2 * wall_thickness,
+                height,
+            ),
+            mat_cabin,
+        )
+
+        current_z += pitch
+        index += 1
+
+
+# ------------------------------------------------------------
+# GT-v2D3A — CANONICAL FRONT-WALL INTERIOR PLANKS
+#
+# One global plank grid for the complete front wall.
+#
+# Door and window are openings in that grid; they do NOT
+# create independent plank spacing.
+#
+# Therefore every row keeps the same canonical Z coordinate
+# across the entire facade.
+# ------------------------------------------------------------
+
+def add_front_wall_planks_interior_canonical(
+    name_prefix,
+    z_min,
+    z_max,
+    pitch=0.24,
+    gap=0.010,
+):
+    """
+    GT-v2D3A-2
+
+    Canonical physical plank grid for the interior front wall.
+
+    Rules:
+    - one global Z grid for the whole wall
+    - door/window do not restart the grid
+    - openings cut boards at their EXACT X/Z limits
+    - visible planks are single-surface panels, not boxes
+    - therefore no artificial vertical end faces are visible
+    """
+
+    board_height = pitch - gap
+
+    canonical_wall_x_min = (
+        -half_width + wall_thickness
+    )
+
+    canonical_wall_x_max = (
+        half_width - wall_thickness
+    )
+
+    # GT-v2D3A-5
+    # Interior cladding must sit in front of the structural
+    # wall face, toward the room (negative Y).
+    #
+    # Structural inner face: front_y - wall_thickness
+    # Joint plane:          inner face - 0.001
+    # Plank plane:          inner face - 0.002
+    wall_inner_y = (
+        front_y
+        - wall_thickness
+    )
+
+    # GT-v2D3A-6
+    # Physical recessed-gap principle, matching the door.
+    #
+    # No artificial joint material is used.
+    # The structural wall behind the boards is visible through
+    # the real 10 mm gaps and naturally creates the seam.
+    cladding_depth = 0.018
+
+    surface_y = (
+        wall_inner_y
+        - cladding_depth
+    )
+
+
+    # GT-v2D3A-6:
+    # No explicit joint geometry.
+    # Gaps reveal the recessed structural wall naturally.
+
+    def add_plank_panel(
+        name,
+        canonical_x_min,
+        canonical_x_max,
+        panel_z_min,
+        panel_z_max,
+    ):
+        x_a = bx(canonical_x_min)
+        x_b = bx(canonical_x_max)
+
+        x_min = min(x_a, x_b)
+        x_max = max(x_a, x_b)
+
+        mesh = bpy.data.meshes.new(
+            f"{name}_MESH"
+        )
+
+        verts = [
+            (x_min, surface_y, panel_z_min),
+            (x_max, surface_y, panel_z_min),
+            (x_max, surface_y, panel_z_max),
+            (x_min, surface_y, panel_z_max),
+        ]
+
+        faces = [
+            (0, 1, 2, 3)
+        ]
+
+        mesh.from_pydata(
+            verts,
+            [],
+            faces,
+        )
+
+        mesh.update()
+
+        obj = bpy.data.objects.new(
+            name,
+            mesh,
+        )
+
+        bpy.context.collection.objects.link(
+            obj
+        )
+
+        obj.data.materials.append(
+            mat_cabin
+        )
+
+        return obj
+
+    current_z = z_min
+    row_index = 1
+
+    while current_z < z_max - 0.001:
+
+        row_z_min = current_z
+
+        row_z_max = min(
+            current_z + board_height,
+            z_max,
+        )
+
+        if row_z_max - row_z_min <= 0.01:
+            break
+
+        # ----------------------------------------------------
+        # Exact vertical subdivision.
+        #
+        # If a window/door starts or ends inside this plank row,
+        # split the row exactly at that Z coordinate.
+        # ----------------------------------------------------
+
+        z_cuts = {
+            row_z_min,
+            row_z_max,
+        }
+
+        for boundary in (
+            door_z_min,
+            door_z_max,
+            window_z_min,
+            window_z_max,
+        ):
+            if (
+                row_z_min
+                < boundary
+                < row_z_max
+            ):
+                z_cuts.add(boundary)
+
+        z_cuts = sorted(z_cuts)
+
+        slice_index = 1
+
+        for za, zb in zip(
+            z_cuts[:-1],
+            z_cuts[1:],
+        ):
+            if zb - za <= 0.002:
+                continue
+
+            z_mid = (za + zb) / 2
+
+            intervals = [
+                (
+                    canonical_wall_x_min,
+                    canonical_wall_x_max,
+                )
+            ]
+
+            active_openings = []
+
+            if (
+                door_z_min
+                < z_mid
+                < door_z_max
+            ):
+                active_openings.append(
+                    (
+                        door_x_min,
+                        door_x_max,
+                    )
+                )
+
+            if (
+                window_z_min
+                < z_mid
+                < window_z_max
+            ):
+                active_openings.append(
+                    (
+                        window_x_min,
+                        window_x_max,
+                    )
+                )
+
+            # Exact X subtraction.
+            for opening_min, opening_max in active_openings:
+
+                new_intervals = []
+
+                for seg_min, seg_max in intervals:
+
+                    if (
+                        opening_max <= seg_min
+                        or opening_min >= seg_max
+                    ):
+                        new_intervals.append(
+                            (
+                                seg_min,
+                                seg_max,
+                            )
+                        )
+                        continue
+
+                    if opening_min > seg_min:
+                        new_intervals.append(
+                            (
+                                seg_min,
+                                min(
+                                    opening_min,
+                                    seg_max,
+                                ),
+                            )
+                        )
+
+                    if opening_max < seg_max:
+                        new_intervals.append(
+                            (
+                                max(
+                                    opening_max,
+                                    seg_min,
+                                ),
+                                seg_max,
+                            )
+                        )
+
+                intervals = new_intervals
+
+            piece_index = 1
+
+            for seg_min, seg_max in intervals:
+
+                if seg_max - seg_min <= 0.01:
+                    continue
+
+                add_plank_panel(
+                    (
+                        f"{name_prefix}"
+                        f"_ROW_{row_index:02d}"
+                        f"_SLICE_{slice_index:02d}"
+                        f"_PIECE_{piece_index:02d}"
+                    ),
+                    seg_min,
+                    seg_max,
+                    za,
+                    zb,
+                )
+
+                piece_index += 1
+
+            slice_index += 1
+
+        current_z += pitch
+        row_index += 1
+
+
+
+# ------------------------------------------------------------
 # SIDE WALLS
 # ------------------------------------------------------------
 
@@ -1640,6 +2374,41 @@ add_box(
 
 
 # ------------------------------------------------------------
+# GT-v2C1c-2 — APPLY SIDE WALL JOINTS
+# ------------------------------------------------------------
+
+left_wall_x = (
+    cabin_x - half_width + wall_thickness / 2
+)
+
+right_wall_x = (
+    cabin_x + half_width - wall_thickness / 2
+)
+
+# GT-v2D2A — left wall:
+# old superimposed seam strips disabled.
+# Physical interior boards are now the source of truth.
+
+add_side_wall_planks_interior(
+    "LEFT-WALL-PLANK-INT",
+    left_wall_x,
+    interior_sign=1,
+    z_min=wall_base_z,
+    z_max=wall_top_z,
+)
+
+# Right wall:
+# exterior is toward positive Blender X.
+add_side_plank_joints(
+    "PLANK-JOINT-RIGHT-WALL",
+    right_wall_x,
+    exterior_sign=1,
+    z_min=wall_base_z,
+    z_max=wall_top_z,
+)
+
+
+# ------------------------------------------------------------
 # REAR WALL
 # ------------------------------------------------------------
 
@@ -1657,6 +2426,17 @@ add_box(
     ),
     mat_cabin,
 )
+
+# GT-v2D:
+# Old superimposed rear-wall seam strips disabled.
+# Physical boards are now the source of construction truth.
+
+add_rear_wall_planks_interior(
+    "REAR-WALL-PLANK-INT",
+    wall_base_z,
+    wall_top_z,
+)
+
 
 
 # Door geometry is needed here to build the physical opening
@@ -1753,6 +2533,78 @@ add_front_wall_segment(
     "CABIN-FRONT-RIGHT",
     window_x_max,
     half_width,
+    wall_base_z,
+    wall_top_z,
+)
+
+
+
+# ------------------------------------------------------------
+# GT-v2B — PHYSICAL EXTERIOR PLANK DEFINITION
+#
+# Follow exactly the existing facade segmentation so that
+# joints never cross the physical door/window openings.
+# ------------------------------------------------------------
+
+add_front_plank_joints(
+    "PLANK-JOINT-LEFT",
+    -half_width,
+    door_x_min,
+    wall_base_z,
+    wall_top_z,
+)
+
+add_front_plank_joints(
+    "PLANK-JOINT-ABOVE-DOOR",
+    door_x_min,
+    door_x_max,
+    door_z_max,
+    wall_top_z,
+)
+
+add_front_plank_joints(
+    "PLANK-JOINT-MIDDLE",
+    door_x_max,
+    window_x_min,
+    wall_base_z,
+    wall_top_z,
+)
+
+add_front_plank_joints(
+    "PLANK-JOINT-BELOW-WINDOW",
+    window_x_min,
+    window_x_max,
+    wall_base_z,
+    window_z_min,
+)
+
+add_front_plank_joints(
+    "PLANK-JOINT-ABOVE-WINDOW",
+    window_x_min,
+    window_x_max,
+    window_z_max,
+    wall_top_z,
+)
+
+add_front_plank_joints(
+    "PLANK-JOINT-RIGHT",
+    window_x_max,
+    half_width,
+    wall_base_z,
+    wall_top_z,
+)
+
+
+# ------------------------------------------------------------
+# GT-v2D3A — CANONICAL INTERIOR FRONT WALL
+#
+# One physical plank grid.
+# Door/window only interrupt the grid.
+# They never restart plank spacing.
+# ------------------------------------------------------------
+
+add_front_wall_planks_interior_canonical(
+    "FRONT-WALL-PLANK-INT",
     wall_base_z,
     wall_top_z,
 )
@@ -1991,6 +2843,135 @@ add_box(
         door_h
     ),
     mat_door
+)
+
+
+# ------------------------------------------------------------
+# GT-v2C1 — CANONICAL DOOR CONSTRUCTION
+#
+# The door is one physical object seen from exterior and interior.
+# Vertical board divisions and hardware use the same coordinates
+# on both faces.
+# ------------------------------------------------------------
+
+door_render_x = bx(door_position["x"])
+door_render_y = door_position["y"] + 0.03
+door_center_z = door_position["z"] + door_h / 2
+
+door_depth = 0.08
+
+# GT-v2D1 — five real vertical boards.
+# Gaps are physical empty spaces, not superimposed dark strips.
+
+door_board_count = 5
+door_gap = 0.010
+door_board_depth = 0.018
+
+usable_width = (
+    door_w
+    - door_gap * (door_board_count - 1)
+)
+
+door_board_width = (
+    usable_width / door_board_count
+)
+
+start_x = (
+    door_render_x
+    - door_w / 2
+)
+
+for i in range(door_board_count):
+
+    board_x_min = (
+        start_x
+        + i * (door_board_width + door_gap)
+    )
+
+    board_center_x = (
+        board_x_min
+        + door_board_width / 2
+    )
+
+    # Exterior face.
+    add_box(
+        f"DOOR_BOARD_EXT_{i + 1:02d}",
+        (
+            board_center_x,
+            door_render_y
+            + door_depth / 2
+            + door_board_depth / 2,
+            door_center_z,
+        ),
+        (
+            door_board_width,
+            door_board_depth,
+            door_h - 0.04,
+        ),
+        mat_door,
+    )
+
+    # Interior face.
+    add_box(
+        f"DOOR_BOARD_INT_{i + 1:02d}",
+        (
+            board_center_x,
+            door_render_y
+            - door_depth / 2
+            - door_board_depth / 2,
+            door_center_z,
+        ),
+        (
+            door_board_width,
+            door_board_depth,
+            door_h - 0.04,
+        ),
+        mat_door,
+    )
+
+
+# ------------------------------------------------------------
+# Canonical door handle axis
+# ------------------------------------------------------------
+
+handle_x = door_render_x - door_w * 0.34
+handle_z = door_position["z"] + door_h * 0.48
+
+handle_radius = 0.055
+handle_projection = 0.065
+
+
+def add_door_handle_side(name, y, outward_sign):
+
+    knob = add_cylinder(
+        name,
+        (
+            handle_x,
+            y,
+            handle_z,
+        ),
+        radius=handle_radius,
+        depth=handle_projection,
+        material=mat_door_hardware,
+    )
+
+    # Cylinders are created along Z; rotate to the physical Y axis.
+    knob.rotation_euler[0] = math.radians(90.0)
+
+    return knob
+
+
+# Exterior and interior handles share the same X/Z axis.
+add_door_handle_side(
+    "DOOR_HANDLE_EXTERIOR",
+    door_render_y + door_depth / 2 + handle_projection / 2,
+    1,
+)
+
+add_door_handle_side(
+    "DOOR_HANDLE_INTERIOR",
+    door_render_y - door_depth / 2 - handle_projection / 2,
+    -1,
 )
 
 
@@ -2288,6 +3269,46 @@ add_box(
         uww,
         0.10,
         upper_frame
+    ),
+    mat_cabin
+)
+
+
+# ------------------------------------------------------------
+# GT-v2C1 — UPPER WINDOW 2x2 CANONICAL MULLIONS
+#
+# These are physical members of the same window.
+# They must be visible consistently from any relevant camera.
+# ------------------------------------------------------------
+
+upper_mullion = 0.055
+
+add_box(
+    "WINDOW_UPPER_MULLION_VERTICAL",
+    point_xyz(
+        uwx,
+        front_y + 0.060,
+        upper_center_z
+    ),
+    (
+        upper_mullion,
+        0.11,
+        uwh - upper_frame
+    ),
+    mat_cabin
+)
+
+add_box(
+    "WINDOW_UPPER_MULLION_HORIZONTAL",
+    point_xyz(
+        uwx,
+        front_y + 0.060,
+        upper_center_z
+    ),
+    (
+        uww - upper_frame,
+        0.11,
+        upper_mullion
     ),
     mat_cabin
 )
@@ -2856,6 +3877,93 @@ cam4 = add_camera(
 
 
 # ============================================================
+# QA CAMERAS — GROUND TRUTH INSPECTION
+#
+# Technical cameras only.
+# They are not part of the narrative shot list.
+#
+# Purpose:
+# - inspect rear wall
+# - inspect left wall
+# - inspect right wall
+# - validate plank orientation / spacing / materials
+# - detect continuity errors before OpenAI refinement
+# ============================================================
+
+qa_eye_z = wall_base_z + wall_height * 0.55
+qa_target_z = wall_base_z + wall_height * 0.50
+
+
+# ------------------------------------------------------------
+# CAM-CHECK-REAR
+#
+# Camera near the front half of the room, looking directly
+# toward the physical rear wall.
+# ------------------------------------------------------------
+
+cam_check_rear = add_camera(
+    "CAM-CHECK-REAR",
+    (
+        cabin_x,
+        front_y - 0.85,
+        qa_eye_z,
+    ),
+    (
+        cabin_x,
+        back_y + wall_thickness,
+        qa_target_z,
+    ),
+    lens=20,
+)
+
+
+# ------------------------------------------------------------
+# CAM-CHECK-LEFT
+#
+# Camera on the right half of the room looking toward
+# the physical left wall.
+# ------------------------------------------------------------
+
+cam_check_left = add_camera(
+    "CAM-CHECK-LEFT",
+    (
+        cabin_x + cabin_width * 0.27,
+        cabin_y,
+        qa_eye_z,
+    ),
+    (
+        cabin_x - half_width + wall_thickness,
+        cabin_y,
+        qa_target_z,
+    ),
+    lens=20,
+)
+
+
+# ------------------------------------------------------------
+# CAM-CHECK-RIGHT
+#
+# Camera on the left half of the room looking toward
+# the physical right wall.
+# ------------------------------------------------------------
+
+cam_check_right = add_camera(
+    "CAM-CHECK-RIGHT",
+    (
+        cabin_x - cabin_width * 0.27,
+        cabin_y,
+        qa_eye_z,
+    ),
+    (
+        cabin_x + half_width - wall_thickness,
+        cabin_y,
+        qa_target_z,
+    ),
+    lens=20,
+)
+
+
+# ============================================================
 # GENERAL LIGHT
 # ============================================================
 
@@ -2933,6 +4041,29 @@ render_camera(
     cam4,
     "CAM-004_interior.png"
 )
+
+# ------------------------------------------------------------
+# QA renders — technical wall inspection
+# ------------------------------------------------------------
+
+render_camera(
+    scene,
+    cam_check_rear,
+    "CAM-CHECK-REAR.png"
+)
+
+render_camera(
+    scene,
+    cam_check_left,
+    "CAM-CHECK-LEFT.png"
+)
+
+render_camera(
+    scene,
+    cam_check_right,
+    "CAM-CHECK-RIGHT.png"
+)
+
 
 window_panel.hide_render = False
 
