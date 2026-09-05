@@ -2339,6 +2339,228 @@ def add_front_wall_planks_interior_canonical(
 
 
 # ------------------------------------------------------------
+# GT-v2F1 — CANONICAL FRONT-WALL EXTERIOR PLANKS
+#
+# Same physical construction grid as the validated interior.
+#
+# Rules:
+# - one global Z grid
+# - door/window interrupt, never restart, the grid
+# - real 10 mm gaps
+# - no artificial seam strips
+# - exterior cladding projects toward +Y
+# ------------------------------------------------------------
+
+def add_front_wall_planks_exterior_canonical(
+    name_prefix,
+    z_min,
+    z_max,
+    pitch=0.24,
+    gap=0.010,
+):
+    board_height = pitch - gap
+
+    canonical_wall_x_min = -half_width
+    canonical_wall_x_max = half_width
+
+    cladding_depth = 0.018
+
+    # Structural exterior face is front_y.
+    # Boards project outward toward +Y.
+    surface_y = (
+        front_y
+        + cladding_depth
+    )
+
+    def add_plank_panel(
+        name,
+        canonical_x_min,
+        canonical_x_max,
+        panel_z_min,
+        panel_z_max,
+    ):
+        x_a = bx(canonical_x_min)
+        x_b = bx(canonical_x_max)
+
+        x_min = min(x_a, x_b)
+        x_max = max(x_a, x_b)
+
+        mesh = bpy.data.meshes.new(
+            f"{name}_MESH"
+        )
+
+        verts = [
+            (x_min, surface_y, panel_z_min),
+            (x_max, surface_y, panel_z_min),
+            (x_max, surface_y, panel_z_max),
+            (x_min, surface_y, panel_z_max),
+        ]
+
+        mesh.from_pydata(
+            verts,
+            [],
+            [(0, 1, 2, 3)],
+        )
+
+        mesh.update()
+
+        obj = bpy.data.objects.new(
+            name,
+            mesh,
+        )
+
+        bpy.context.collection.objects.link(
+            obj
+        )
+
+        obj.data.materials.append(
+            mat_cabin
+        )
+
+        return obj
+
+    current_z = z_min
+    row_index = 1
+
+    while current_z < z_max - 0.001:
+
+        row_z_min = current_z
+
+        row_z_max = min(
+            current_z + board_height,
+            z_max,
+        )
+
+        if row_z_max - row_z_min <= 0.01:
+            break
+
+        # Exact Z subdivision at opening boundaries.
+        z_cuts = {
+            row_z_min,
+            row_z_max,
+        }
+
+        for boundary in (
+            door_z_min,
+            door_z_max,
+            window_z_min,
+            window_z_max,
+        ):
+            if (
+                row_z_min
+                < boundary
+                < row_z_max
+            ):
+                z_cuts.add(boundary)
+
+        z_cuts = sorted(z_cuts)
+
+        slice_index = 1
+
+        for za, zb in zip(
+            z_cuts[:-1],
+            z_cuts[1:],
+        ):
+            if zb - za <= 0.002:
+                continue
+
+            z_mid = (za + zb) / 2
+
+            intervals = [
+                (
+                    canonical_wall_x_min,
+                    canonical_wall_x_max,
+                )
+            ]
+
+            active_openings = []
+
+            if (
+                door_z_min
+                < z_mid
+                < door_z_max
+            ):
+                active_openings.append(
+                    (
+                        door_x_min,
+                        door_x_max,
+                    )
+                )
+
+            if (
+                window_z_min
+                < z_mid
+                < window_z_max
+            ):
+                active_openings.append(
+                    (
+                        window_x_min,
+                        window_x_max,
+                    )
+                )
+
+            for opening_min, opening_max in active_openings:
+
+                new_intervals = []
+
+                for seg_min, seg_max in intervals:
+
+                    if (
+                        opening_max <= seg_min
+                        or opening_min >= seg_max
+                    ):
+                        new_intervals.append(
+                            (seg_min, seg_max)
+                        )
+                        continue
+
+                    if opening_min > seg_min:
+                        new_intervals.append(
+                            (
+                                seg_min,
+                                min(opening_min, seg_max),
+                            )
+                        )
+
+                    if opening_max < seg_max:
+                        new_intervals.append(
+                            (
+                                max(opening_max, seg_min),
+                                seg_max,
+                            )
+                        )
+
+                intervals = new_intervals
+
+            piece_index = 1
+
+            for seg_min, seg_max in intervals:
+
+                if seg_max - seg_min <= 0.01:
+                    continue
+
+                add_plank_panel(
+                    (
+                        f"{name_prefix}"
+                        f"_ROW_{row_index:02d}"
+                        f"_SLICE_{slice_index:02d}"
+                        f"_PIECE_{piece_index:02d}"
+                    ),
+                    seg_min,
+                    seg_max,
+                    za,
+                    zb,
+                )
+
+                piece_index += 1
+
+            slice_index += 1
+
+        current_z += pitch
+        row_index += 1
+
+
+# ------------------------------------------------------------
 # SIDE WALLS
 # ------------------------------------------------------------
 
@@ -2541,56 +2763,14 @@ add_front_wall_segment(
 
 
 # ------------------------------------------------------------
-# GT-v2B — PHYSICAL EXTERIOR PLANK DEFINITION
+# GT-v2F1 — CANONICAL EXTERIOR FRONT WALL
 #
-# Follow exactly the existing facade segmentation so that
-# joints never cross the physical door/window openings.
+# One physical plank grid shared by the complete rectangular
+# facade. Door/window interrupt the grid but never restart it.
 # ------------------------------------------------------------
 
-add_front_plank_joints(
-    "PLANK-JOINT-LEFT",
-    -half_width,
-    door_x_min,
-    wall_base_z,
-    wall_top_z,
-)
-
-add_front_plank_joints(
-    "PLANK-JOINT-ABOVE-DOOR",
-    door_x_min,
-    door_x_max,
-    door_z_max,
-    wall_top_z,
-)
-
-add_front_plank_joints(
-    "PLANK-JOINT-MIDDLE",
-    door_x_max,
-    window_x_min,
-    wall_base_z,
-    wall_top_z,
-)
-
-add_front_plank_joints(
-    "PLANK-JOINT-BELOW-WINDOW",
-    window_x_min,
-    window_x_max,
-    wall_base_z,
-    window_z_min,
-)
-
-add_front_plank_joints(
-    "PLANK-JOINT-ABOVE-WINDOW",
-    window_x_min,
-    window_x_max,
-    window_z_max,
-    wall_top_z,
-)
-
-add_front_plank_joints(
-    "PLANK-JOINT-RIGHT",
-    window_x_max,
-    half_width,
+add_front_wall_planks_exterior_canonical(
+    "FRONT-WALL-PLANK-EXT",
     wall_base_z,
     wall_top_z,
 )
@@ -3187,15 +3367,36 @@ add_box(
 )
 
 
+# GT-v2F2 — equal visible window panes.
+#
+# Mullion positions are derived from the CLEAR opening,
+# not from the total outer window dimension.
+
+clear_width = (
+    ww
+    - 2 * frame_width
+    - (columns - 1) * mullion_width
+)
+
+pane_width = (
+    clear_width / columns
+)
+
+canonical_inner_left = (
+    wx
+    - ww / 2
+    + frame_width
+)
+
 for i in range(
     1,
     columns
 ):
 
     canonical_x = (
-        wx
-        - ww / 2
-        + ww * i / columns
+        canonical_inner_left
+        + i * pane_width
+        + (i - 0.5) * mullion_width
     )
 
     add_box(
@@ -3214,14 +3415,29 @@ for i in range(
     )
 
 
+clear_height = (
+    wh
+    - 2 * frame_width
+    - (rows - 1) * mullion_width
+)
+
+pane_height = (
+    clear_height / rows
+)
+
+inner_bottom_z = (
+    wz + frame_width
+)
+
 for i in range(
     1,
     rows
 ):
 
     z = (
-        wz
-        + wh * i / rows
+        inner_bottom_z
+        + i * pane_height
+        + (i - 0.5) * mullion_width
     )
 
     add_box(
@@ -4156,6 +4372,37 @@ cam_check_porch = add_camera(
 )
 
 
+# ------------------------------------------------------------
+# CAM-CHECK-FRONT
+#
+# Orthogonal-style technical QA view of the main facade.
+#
+# Purpose:
+# - validate front window proportions / mullions
+# - validate door geometry
+# - validate canonical exterior plank grid
+# - later validate gable continuity
+#
+# Porch roof/posts are temporarily hidden only during this
+# technical render so they do not occlude the facade.
+# ------------------------------------------------------------
+
+cam_check_front = add_camera(
+    "CAM-CHECK-FRONT",
+    (
+        cabin_x,
+        8.0,
+        1.70,
+    ),
+    (
+        cabin_x,
+        front_y,
+        1.70,
+    ),
+    lens=55,
+)
+
+
 # ============================================================
 # GENERAL LIGHT
 # ============================================================
@@ -4218,6 +4465,44 @@ render_camera(
     cam_check_porch,
     "CAM-CHECK-PORCH.png"
 )
+
+
+# ------------------------------------------------------------
+# QA exterior render — unobstructed main facade
+# ------------------------------------------------------------
+
+qa_front_hidden_objects = []
+
+for object_name in (
+    "PORCH_ROOF",
+    "PORCH-POST-01",
+    "PORCH-POST-02",
+    "PORCH-POST-03",
+    "PORCH-POST-04",
+):
+    obj = bpy.data.objects.get(object_name)
+
+    if obj is not None:
+        qa_front_hidden_objects.append(
+            (
+                obj,
+                obj.hide_render,
+            )
+        )
+        obj.hide_render = True
+
+
+render_camera(
+    scene,
+    cam_check_front,
+    "CAM-CHECK-FRONT.png"
+)
+
+
+# Restore canonical porch visibility immediately.
+for obj, previous_hide_render in qa_front_hidden_objects:
+    obj.hide_render = previous_hide_render
+
 
 # CAM-002 looks through the same physical front window.
 # The cabin is now a hollow shell; only the provisional
