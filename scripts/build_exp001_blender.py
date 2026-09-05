@@ -2397,12 +2397,13 @@ add_side_wall_planks_interior(
     z_max=wall_top_z,
 )
 
-# Right wall:
-# exterior is toward positive Blender X.
-add_side_plank_joints(
-    "PLANK-JOINT-RIGHT-WALL",
+# GT-v2D2B — right wall:
+# Physical interior boards, matching the validated left wall.
+
+add_side_wall_planks_interior(
+    "RIGHT-WALL-PLANK-INT",
     right_wall_x,
-    exterior_sign=1,
+    interior_sign=-1,
     z_min=wall_base_z,
     z_max=wall_top_z,
 )
@@ -2631,23 +2632,101 @@ interior_center_y = (
 
 
 # ------------------------------------------------------------
-# FLOOR
+# GT-v2E1 — CANONICAL PHYSICAL INTERIOR FLOOR
+#
+# Ground-truth rules:
+# - boards have one fixed world-space orientation
+# - long axis runs along Blender Y (front <-> rear)
+# - gaps are real, not painted
+# - structural backing is recessed below the boards
+# - finished floor height remains unchanged
 # ------------------------------------------------------------
 
+floor_material = interior_materials[
+    "MAT-INTERIOR-FLOOR-01"
+]
+
+floor_top_z = (
+    wall_base_z + 0.10
+)
+
+floor_board_depth = 0.018
+floor_pitch = 0.24
+floor_gap = 0.010
+floor_board_width = (
+    floor_pitch - floor_gap
+)
+
+# Structural backing.
+# Its top is recessed by exactly the board depth so that
+# furniture/object Z coordinates remain unchanged.
+floor_backing_height = (
+    0.10 - floor_board_depth
+)
+
 add_box(
-    "INTERIOR-FLOOR",
+    "INTERIOR-FLOOR-BACKING",
     (
         cabin_x,
         interior_center_y,
-        wall_base_z + 0.05,
+        wall_base_z
+        + floor_backing_height / 2,
     ),
     (
         interior_width,
         interior_depth,
-        0.10,
+        floor_backing_height,
     ),
-    interior_materials["MAT-INTERIOR-FLOOR-01"],
+    floor_material,
 )
+
+# Physical floor boards.
+#
+# Boards run along Y.
+# Repeated spacing happens only along X.
+floor_x_min = (
+    cabin_x - interior_width / 2
+)
+
+floor_x_max = (
+    cabin_x + interior_width / 2
+)
+
+current_x = floor_x_min
+board_index = 1
+
+while current_x < floor_x_max - 0.001:
+
+    available = (
+        floor_x_max - current_x
+    )
+
+    width = min(
+        floor_board_width,
+        available,
+    )
+
+    if width <= 0.01:
+        break
+
+    add_box(
+        f"INTERIOR-FLOOR-BOARD_{board_index:02d}",
+        (
+            current_x + width / 2,
+            interior_center_y,
+            floor_top_z
+            - floor_board_depth / 2,
+        ),
+        (
+            width,
+            interior_depth,
+            floor_board_depth,
+        ),
+        floor_material,
+    )
+
+    current_x += floor_pitch
+    board_index += 1
 
 
 # ------------------------------------------------------------
@@ -3353,25 +3432,85 @@ porch_center_y = (
 
 
 # ============================================================
-# PORCH FLOOR
+# GT-v2E2 — CANONICAL PHYSICAL PORCH DECK
+#
+# Ground-truth rules:
+# - boards use a fixed world-space orientation
+# - long axis runs along Blender Y
+# - gaps are real, not painted
+# - structural backing is recessed below the boards
+# - finished porch height remains unchanged
 # ============================================================
 
 floor = porch["floor"]
 
-add_box(
-    "PORCH_FLOOR",
-    (
-        porch_center_x,
-        porch_center_y,
-        floor["z"]
-    ),
-    (
-        porch_width,
-        porch_depth,
-        floor["thickness"]
-    ),
-    mat_porch
+porch_floor_top_z = (
+    floor["z"]
+    + floor["thickness"] / 2
 )
+
+# GT-v2E2B — FULL-DEPTH PHYSICAL DECK BOARDS
+#
+# The porch edge must reveal the same physical board divisions
+# that are visible on the upper surface.
+#
+# Therefore each deck board has the complete canonical floor
+# thickness. There is no continuous fascia/backing masking the
+# board ends.
+
+porch_board_depth = floor["thickness"]
+
+porch_pitch = 0.24
+porch_gap = 0.010
+porch_board_width = (
+    porch_pitch - porch_gap
+)
+
+# Physical porch boards.
+# Long axis runs along Y; spacing runs along X.
+porch_x_min = (
+    porch_center_x - porch_width / 2
+)
+
+porch_x_max = (
+    porch_center_x + porch_width / 2
+)
+
+current_x = porch_x_min
+board_index = 1
+
+while current_x < porch_x_max - 0.001:
+
+    available = (
+        porch_x_max - current_x
+    )
+
+    width = min(
+        porch_board_width,
+        available
+    )
+
+    if width <= 0.01:
+        break
+
+    add_box(
+        f"PORCH_FLOOR_BOARD_{board_index:02d}",
+        (
+            current_x + width / 2,
+            porch_center_y,
+            porch_floor_top_z
+            - porch_board_depth / 2,
+        ),
+        (
+            width,
+            porch_depth,
+            porch_board_depth,
+        ),
+        mat_porch
+    )
+
+    current_x += porch_pitch
+    board_index += 1
 
 
 # ============================================================
@@ -3485,25 +3624,50 @@ stairs_width = (
 )
 
 
-for i in range(3):
+# GT-v2E2A — CANONICAL PORCH STAIRS
+#
+# The staircase rises from the path toward the porch.
+# The highest tread is nearest the porch and finishes
+# exactly at the canonical porch floor height.
 
-    depth = 0.35
-    height = 0.12
+step_count = 3
+step_depth = 0.35
+
+# Equal vertical rises terminating exactly at porch deck level.
+step_height = (
+    porch_floor_top_z / step_count
+)
+
+for i in range(step_count):
+
+    # i=0 -> lowest / farthest from porch
+    # i=2 -> highest / nearest to porch
+    distance_from_porch = (
+        step_count
+        - i
+        - 0.5
+    ) * step_depth
+
+    step_y = (
+        py_max
+        + distance_from_porch
+    )
+
+    step_center_z = (
+        step_height * (i + 0.5)
+    )
 
     add_box(
         f"STAIR_{i + 1}",
         (
             stairs_x,
-            stairs_y
-            + 0.35
-            + i * depth,
-            height / 2
-            + i * height
+            step_y,
+            step_center_z,
         ),
         (
             stairs_width,
-            depth,
-            height
+            step_depth,
+            step_height,
         ),
         mat_porch
     )
@@ -3963,6 +4127,35 @@ cam_check_right = add_camera(
 )
 
 
+# ------------------------------------------------------------
+# CAM-CHECK-PORCH
+#
+# Technical QA camera for porch/deck inspection.
+# Elevated oblique view to verify:
+# - board direction
+# - board width/gaps
+# - relationship with stairs/posts/railing
+# - finished floor height
+#
+# Not part of the narrative shot list.
+# ------------------------------------------------------------
+
+cam_check_porch = add_camera(
+    "CAM-CHECK-PORCH",
+    (
+        porch_center_x + 2.6,
+        porch_center_y + 3.0,
+        2.8,
+    ),
+    (
+        porch_center_x,
+        porch_center_y,
+        porch_floor_top_z,
+    ),
+    lens=32,
+)
+
+
 # ============================================================
 # GENERAL LIGHT
 # ============================================================
@@ -4016,6 +4209,14 @@ render_camera(
     scene,
     cam1,
     "CAM-001_exterior.png"
+)
+
+
+# QA exterior render — porch/deck inspection.
+render_camera(
+    scene,
+    cam_check_porch,
+    "CAM-CHECK-PORCH.png"
 )
 
 # CAM-002 looks through the same physical front window.
