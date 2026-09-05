@@ -166,7 +166,7 @@
         "depth": 0.9,
         "height": 1.0
       },
-      "rotation_z_deg": -30.0,
+      "rotation_z_deg": -150.0,
       "materials": [
         "MAT-FURNITURE-WOOD-01",
         "MAT-FABRIC-NEUTRAL-01"
